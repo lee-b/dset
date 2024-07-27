@@ -3,13 +3,16 @@ import json
 import os
 import sys
 from pydantic import BaseModel
-from llama_cpp import LlamaCPP
 
 class DatasetItem(BaseModel):
     text: str
 
 def process_dataset(input_file, output_file):
-    llama = LlamaCPP(os.environ['OPENAI_API_BASE'])
+    # implement your own text generation logic here
+    def generate_text(prompt, max_tokens):
+        # TO DO: implement text generation logic
+        pass
+    llama = generate_text
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
             data = json.loads(line)
