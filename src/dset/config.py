@@ -8,13 +8,12 @@ class Config:
     input: str
     output: str
     operation: Callable
-    question: str = None
+    raw_user_prompt: str = None
     max_size: int = None
-    requirement: str = None
 
 def filter_handler(args):
     from dset.operations import filter_operation
-    filter_operation(args.input, args.output, args.requirement)
+    filter_operation(args.input, args.output, args.raw_user_prompt)
 
 def merge_handler(args):
     from dset.operations import merge_operation
@@ -26,11 +25,11 @@ def split_handler(args):
 
 def ask_handler(args):
     from dset.operations import ask_operation
-    ask_operation(args.input, args.question)
+    ask_operation(args.input, args.raw_user_prompt)
 
 def assert_handler(args):
     from dset.operations import assert_operation
-    assert_operation(args.input, args.question)
+    assert_operation(args.input, args.raw_user_prompt)
 
 def build_config() -> Config:
     parser = argparse.ArgumentParser(description="DSET: Dataset Processing Operations")
@@ -42,7 +41,7 @@ def build_config() -> Config:
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
     filter_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     filter_parser.add_argument('--output', required=True, help='Output dataset file or directory')
-    filter_parser.add_argument('--requirement', required=True, help='Requirement for filtering entries')
+    filter_parser.add_argument('--raw-user-prompt', required=True, help='Raw user prompt for filtering entries')
     filter_parser.set_defaults(func=filter_handler)
 
     # Merge subcommand
@@ -59,24 +58,23 @@ def build_config() -> Config:
     split_parser.set_defaults(func=split_handler)
 
     # Ask subcommand
-    ask_parser = subparsers.add_parser('ask', help='Ask a yes/no question about the dataset')
+    ask_parser = subparsers.add_parser('ask', help='Ask a question about the dataset')
     ask_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    ask_parser.add_argument('--question', required=True, help='Question to ask about the dataset')
+    ask_parser.add_argument('--raw-user-prompt', required=True, help='Question to ask about the dataset')
     ask_parser.set_defaults(func=ask_handler)
 
     # Assert subcommand
     assert_parser = subparsers.add_parser('assert', help='Assert a condition about the dataset')
     assert_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    assert_parser.add_argument('--question', required=True, help='Condition to assert about the dataset')
+    assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_handler)
 
     args = parser.parse_args()
 
     return Config(
         input=args.input,
-        output=args.output,
+        output=getattr(args, 'output', None),
         operation=args.func,
-        question=getattr(args, 'question', None),
-        max_size=getattr(args, 'max_size', None),
-        requirement=getattr(args, 'requirement', None)
+        raw_user_prompt=getattr(args, 'raw_user_prompt', None),
+        max_size=getattr(args, 'max_size', None)
     )
