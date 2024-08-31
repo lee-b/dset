@@ -21,10 +21,10 @@ def create_test_data(data, is_dir=False):
 
     return str(file_path)
 
-def mock_ask_yes_no_question(question):
+def mock_ask_yes_no_question(config, question):
     return {"answer": True, "reason": "Mock reason"}
 
-def mock_generate_text(prompt):
+def mock_generate_text(config, prompt):
     return json.dumps({"name": "John Doe", "age": 30})
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)

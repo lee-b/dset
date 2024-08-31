@@ -49,8 +49,8 @@ def test_batch_operation():
 
             # Check the arguments passed to filter_operation
             filter_args = mock_filter.call_args[0][0]
-            assert filter_args.input_path == "generated_data.jsonl"
-            assert filter_args.output_path == "verified_data.jsonl"
+            assert filter_args.input == "generated_data.jsonl"
+            assert filter_args.output == "verified_data.jsonl"
             assert filter_args.raw_user_prompt == "Verify that all fields (name, age, favorite color) are populated, the entry looks correct according to the prompt, and the age is over 30"
 
     finally:
