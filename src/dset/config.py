@@ -3,6 +3,7 @@ import sys
 from dataclasses import dataclass
 from typing import Tuple, Optional
 from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
+from dset.batch import batch_operation
 
 @dataclass
 class Config:
@@ -52,6 +53,11 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     gen_parser.add_argument('raw_user_prompt', metavar='user_prompt', help='Prompt for generating entries')
     gen_parser.add_argument('num_entries', type=int, help='Number of entries to generate')
     gen_parser.set_defaults(func=generate_operation)
+
+    # Batch subcommand
+    batch_parser = subparsers.add_parser('batch', help='Execute a batch of operations from a YAML file')
+    batch_parser.add_argument('yaml_file', help='YAML file containing batch operations')
+    batch_parser.set_defaults(func=batch_operation)
 
     # Check if no arguments were provided
     if len(sys.argv) == 1:
