@@ -2,7 +2,7 @@ import os
 import json
 import requests
 
-def ask_yes_no_question(question, model="gpt-3.5-turbo"):
+def ask_yes_no_question(config, question, smart: bool = False):
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         # Return a mock response for testing purposes
@@ -15,6 +15,8 @@ def ask_yes_no_question(question, model="gpt-3.5-turbo"):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
+
+    model = config.smart_model if smart else config.fast_model
 
     data = {
         "model": model,
@@ -54,7 +56,7 @@ def ask_yes_no_question(question, model="gpt-3.5-turbo"):
             "reason": "Mock response due to network error"
         }
 
-def generate_text(prompt, model="gpt-3.5-turbo"):
+def generate_text(config, prompt, smart: bool = False):
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         # Return a mock response for testing purposes
@@ -64,6 +66,8 @@ def generate_text(prompt, model="gpt-3.5-turbo"):
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
+
+    model = config.smart_model if smart else config.fast_model
 
     data = {
         "model": model,

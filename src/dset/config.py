@@ -1,13 +1,15 @@
 import argparse
 import sys
+import os
 from dataclasses import dataclass
 from typing import Tuple, Optional
-from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
-from dset.batch import batch_operation
+from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation, batch_operation
 
 @dataclass
 class Config:
     args: argparse.Namespace
+    smart_model: str
+    fast_model: str
 
 def build_config() -> Tuple[bool, Optional[Config]]:
     parser = argparse.ArgumentParser(description="DSET: Dataset Processing Operations")
@@ -66,7 +68,9 @@ def build_config() -> Tuple[bool, Optional[Config]]:
 
     try:
         args = parser.parse_args()
-        return True, Config(args=args)
+        smart_model = os.environ.get("OPENAI_SMART_MODEL", "gpt-4")
+        fast_model = os.environ.get("OPENAI_FAST_MODEL", "gpt-3.5-turbo")
+        return True, Config(args=args, smart_model=smart_model, fast_model=fast_model)
     except SystemExit:
         # This catches the SystemExit raised by argparse when --help or --version is used
         return False, None
