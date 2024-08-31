@@ -86,7 +86,7 @@ def test_merge_operation():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-@patch('dset.dataset.DataSet.split')
+@patch('dset.dataset.ReadableDataSet.split')
 def test_split_operation(mock_split):
     test_data = [{"id": i} for i in range(100)]
     input_file = create_test_data(test_data)
@@ -188,7 +188,7 @@ def test_merge_operation_with_empty_file():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-@patch('dset.dataset.DataSet.split')
+@patch('dset.dataset.ReadableDataSet.split')
 def test_split_operation_with_small_file(mock_split):
     test_data = [{"id": i} for i in range(5)]
     input_file = create_test_data(test_data)
