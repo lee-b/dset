@@ -1,4 +1,5 @@
 import json
+import os
 from dset.openai_api import ask_yes_no_question
 
 def process_jsonl(file_path, question):
@@ -36,3 +37,35 @@ def assert_operation(input_file, question):
             if not result['answer']:
                 print(f"- {result['reason']}")
         exit(1)
+
+def split_operation(input_file, output_prefix, max_size):
+    file_number = 1
+    current_size = 0
+    current_file = None
+    file_sizes = []
+
+    with open(input_file, 'r') as infile:
+        for line in infile:
+            line_size = len(line.encode('utf-8'))
+
+            if current_file is None or current_size + line_size > max_size:
+                if current_file:
+                    current_file.close()
+                    file_sizes.append(current_size)
+
+                output_file = f"{output_prefix}_{file_number}.jsonl"
+                current_file = open(output_file, 'w')
+                print(f"Created file: {output_file}")
+                current_size = 0
+                file_number += 1
+
+            current_file.write(line)
+            current_size += line_size
+
+    if current_file:
+        current_file.close()
+        file_sizes.append(current_size)
+
+    print(f"\nTotal files created: {file_number - 1}")
+    print(f"Minimum file size: {min(file_sizes)} bytes")
+    print(f"Maximum file size: {max(file_sizes)} bytes")
