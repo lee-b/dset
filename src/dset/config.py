@@ -1,16 +1,18 @@
 import argparse
+import sys
 from dataclasses import dataclass
+from typing import Tuple, Optional
 from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation
 
 @dataclass
 class Config:
     args: argparse.Namespace
 
-def build_config() -> Config:
+def build_config() -> Tuple[bool, Optional[Config]]:
     parser = argparse.ArgumentParser(description="DSET: Dataset Processing Operations")
     parser.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
-    subparsers = parser.add_subparsers(dest='operation', required=True, help='Operation to perform on the dataset')
+    subparsers = parser.add_subparsers(dest='operation', help='Operation to perform on the dataset')
 
     # Filter subcommand
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
@@ -44,6 +46,18 @@ def build_config() -> Config:
     assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
 
-    args = parser.parse_args()
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return False, None
 
-    return Config(args=args)
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        # This exception is raised when --help or --version is used
+        return False, None
+
+    if not hasattr(args, 'func'):
+        parser.print_help()
+        return False, None
+
+    return True, Config(args=args)

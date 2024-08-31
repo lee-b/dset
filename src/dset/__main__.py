@@ -1,10 +1,15 @@
 from dset.config import build_config
 
 def main():
-    config = build_config()
-    
-    # Execute the function associated with the chosen subcommand
-    config.args.func(config)
+    success, config = build_config()
+    if not success:
+        return
+
+    try:
+        config.args.func(config)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        exit(1)
 
 if __name__ == "__main__":
     main()
