@@ -8,127 +8,122 @@ import openai
 class DatasetItem(BaseModel):
     text: str
 
-def process_dataset(input_file, output_file, model, prompt_file=None, include_prompt=None, exclude_prompt=None):
-    openai.api_key = os.environ.get('OPENAI_API_KEY')
-    openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+def load_prompt(file_or_string):
+    if os.path.isfile(file_or_string):
+        with open(file_or_string, 'r') as f:
+            return f.read().strip()
+    return file_or_string
 
-    def generate_text(prompt, max_tokens=256):
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                n=1,
-                temperature=0.7,
-            )
-            return response.choices[0].message['content'].strip()
-        except Exception as e:
-            print(f"Error in text generation: {e}", file=sys.stderr)
-            return ""
+def generate_text(model, prompt, max_tokens=256):
+    try:
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
+            n=1,
+            temperature=0.7,
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error in text generation: {e}", file=sys.stderr)
+        return ""
 
-    if prompt_file:
-        with open(prompt_file, 'r') as f_prompt:
-            prompt = f_prompt.read().strip()
-    else:
-        prompt = None
+def process_dataset(input_file, output_file, model, prompt):
+    with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
+        for line in f_in:
+            data = json.loads(line)
+            text = data['text']
+            response = generate_text(model, f"{prompt} {text}")
+            f_out.write(json.dumps({'text': response}) + '\n')
 
+def generate_synthetic_dataset(output_file, model, prompt, num_items):
+    with open(output_file, 'w') as f_out:
+        for _ in range(num_items):
+            response = generate_text(model, prompt)
+            f_out.write(json.dumps({'text': response}) + '\n')
+
+def filter_dataset(input_file, output_file, model, include_prompt, exclude_prompt):
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
             data = json.loads(line)
             text = data['text']
             if include_prompt:
-                response = generate_text(f"{include_prompt} {text}")
+                if generate_text(model, f"{include_prompt}\n\nText: {text}\n\nAnswer (Yes/No):").lower() == "yes":
+                    f_out.write(line)
             elif exclude_prompt:
-                response = generate_text(f"{exclude_prompt} {text}")
-            elif prompt:
-                response = generate_text(f"{prompt} {text}")
-            else:
-                response = generate_text(text)
-            f_out.write(json.dumps({'text': response}) + '\n')
+                if generate_text(model, f"{exclude_prompt}\n\nText: {text}\n\nAnswer (Yes/No):").lower() == "no":
+                    f_out.write(line)
 
-def generate_synthetic_dataset(input_file, output_file, model):
-    openai.api_key = os.environ.get('OPENAI_API_KEY')
-    openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+def ask_dataset_question(input_file, question, model):
+    dataset = []
+    with open(input_file, 'r') as f:
+        for line in f:
+            dataset.append(json.loads(line)['text'])
 
-    def generate_synthetic_item(prompt="Generate a synthetic dataset item", max_tokens=256):
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                n=1,
-                temperature=0.7,
-            )
-            return response.choices[0].message['content'].strip()
-        except Exception as e:
-            print(f"Error in synthetic item generation: {e}", file=sys.stderr)
-            return ""
-
-    with open(output_file, 'w') as f_out:
-        for _ in range(100):  # generate 100 synthetic dataset items
-            response = generate_synthetic_item()
-            f_out.write(json.dumps({'text': response}) + '\n')
-
-def generate_dataset_from_prompt_file(prompt_file, output_file, model, num_items=100):
-    openai.api_key = os.environ.get('OPENAI_API_KEY')
-    openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
-
-    def generate_item(prompt, max_tokens=256):
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                n=1,
-                temperature=0.7,
-            )
-            return response.choices[0].message['content'].strip()
-        except Exception as e:
-            print(f"Error in item generation: {e}", file=sys.stderr)
-            return ""
-
-    with open(prompt_file, 'r') as f_prompt:
-        prompt = f_prompt.read().strip()
-
-    with open(output_file, 'w') as f_out:
-        for _ in range(num_items):
-            response = generate_item(prompt)
-            f_out.write(json.dumps({'text': response}) + '\n')
+    dataset_str = "\n".join(dataset)
+    prompt = f"Given the following dataset:\n\n{dataset_str}\n\nQuestion: {question}\n\nAnswer (Yes/No):"
+    
+    return generate_text(model, prompt, max_tokens=1)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input', help='input file')
-    parser.add_argument('-o', '--output', help='output file')
-    parser.add_argument('--generate', action='store_true', help='generate synthetic dataset')
-    parser.add_argument('--model', default='gpt-4', help='model to use for text generation')
-    parser.add_argument('--prompt-file', help='file containing prompt for dataset generation or transformation')
-    parser.add_argument('--include-prompt', help='prompt for including items in the dataset')
-    parser.add_argument('--exclude-prompt', help='prompt for excluding items from the dataset')
-    parser.add_argument('--num-items', type=int, default=100, help='number of items to generate when using a prompt file')
+    parser = argparse.ArgumentParser(description="Dataset Processing Operations")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Ask command
+    ask_parser = subparsers.add_parser("ask", help="Ask a question about the dataset")
+    ask_parser.add_argument("input", help="Input file")
+    ask_parser.add_argument("question", help="Question to ask about the dataset")
+    ask_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
+
+    # Generate command
+    gen_parser = subparsers.add_parser("gen", help="Generate a synthetic dataset")
+    gen_parser.add_argument("output", help="Output file")
+    gen_parser.add_argument("prompt", nargs="?", help="Prompt for dataset generation")
+    gen_parser.add_argument("--prompt-file", help="File containing prompt for dataset generation")
+    gen_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
+    gen_parser.add_argument("--num-items", type=int, default=100, help="Number of items to generate")
+
+    # Process command
+    process_parser = subparsers.add_parser("process", help="Process an existing dataset")
+    process_parser.add_argument("input", help="Input file")
+    process_parser.add_argument("output", help="Output file")
+    process_parser.add_argument("prompt", nargs="?", help="Prompt for dataset processing")
+    process_parser.add_argument("--prompt-file", help="File containing prompt for dataset processing")
+    process_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
+
+    # Filter command
+    filter_parser = subparsers.add_parser("filter", help="Filter an existing dataset")
+    filter_parser.add_argument("input", help="Input file")
+    filter_parser.add_argument("output", help="Output file")
+    filter_parser.add_argument("--include", help="Prompt for including items in the dataset")
+    filter_parser.add_argument("--include-file", help="File containing prompt for including items")
+    filter_parser.add_argument("--exclude", help="Prompt for excluding items from the dataset")
+    filter_parser.add_argument("--exclude-file", help="File containing prompt for excluding items")
+    filter_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
+
     args = parser.parse_args()
 
-    if args.input and args.output:
-        input_file = args.input
-        output_file = args.output
-    else:
-        input_file = sys.stdin
-        output_file = sys.stdout
+    openai.api_key = os.environ.get('OPENAI_API_KEY')
+    openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
-    if args.prompt_file or args.include_prompt or args.exclude_prompt:
-        process_dataset(input_file, output_file, model=args.model, prompt_file=args.prompt_file, include_prompt=args.include_prompt, exclude_prompt=args.exclude_prompt)
-    elif args.generate:
-        generate_synthetic_dataset(input_file, output_file, model=args.model)
+    if args.command == "ask":
+        answer = ask_dataset_question(args.input, args.question, args.model)
+        print(f"Answer: {answer}")
+    elif args.command == "gen":
+        prompt = load_prompt(args.prompt_file) if args.prompt_file else args.prompt
+        generate_synthetic_dataset(args.output, args.model, prompt, args.num_items)
+    elif args.command == "process":
+        prompt = load_prompt(args.prompt_file) if args.prompt_file else args.prompt
+        process_dataset(args.input, args.output, args.model, prompt)
+    elif args.command == "filter":
+        include_prompt = load_prompt(args.include_file) if args.include_file else args.include
+        exclude_prompt = load_prompt(args.exclude_file) if args.exclude_file else args.exclude
+        filter_dataset(args.input, args.output, args.model, include_prompt, exclude_prompt)
     else:
-        process_dataset(input_file, output_file, model=args.model)
+        parser.print_help()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
