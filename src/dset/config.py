@@ -1,5 +1,6 @@
 import argparse
 from dataclasses import dataclass
+from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation
 
 @dataclass
 class Config:
@@ -16,27 +17,32 @@ def build_config() -> Config:
     filter_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     filter_parser.add_argument('--output', required=True, help='Output dataset file or directory')
     filter_parser.add_argument('--raw-user-prompt', required=True, help='Raw user prompt for filtering entries')
+    filter_parser.set_defaults(func=filter_operation)
 
     # Merge subcommand
     merge_parser = subparsers.add_parser('merge', help='Merge datasets into a new dataset')
     merge_parser.add_argument('--input', required=True, help='Input dataset files or directories (comma-separated)')
     merge_parser.add_argument('--output', required=True, help='Output dataset file or directory')
+    merge_parser.set_defaults(func=merge_operation)
 
     # Split subcommand
     split_parser = subparsers.add_parser('split', help='Split a dataset into multiple new datasets based on maximum size')
     split_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     split_parser.add_argument('--output', required=True, help='Output dataset files or directory prefix')
     split_parser.add_argument('--max-size', type=int, required=True, help='Maximum size of each split file in bytes')
+    split_parser.set_defaults(func=split_operation)
 
     # Ask subcommand
     ask_parser = subparsers.add_parser('ask', help='Ask a question about the dataset')
     ask_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     ask_parser.add_argument('--raw-user-prompt', required=True, help='Question to ask about the dataset')
+    ask_parser.set_defaults(func=ask_operation)
 
     # Assert subcommand
     assert_parser = subparsers.add_parser('assert', help='Assert a condition about the dataset')
     assert_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
+    assert_parser.set_defaults(func=assert_operation)
 
     args = parser.parse_args()
 
