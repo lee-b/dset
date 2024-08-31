@@ -122,7 +122,7 @@ def filter_operation(config) -> bool:
     input_path = Path(config.args.input_path)
     output_path = Path(config.args.output_path)
     
-    if output_path.is_file() and input_path.is_dir():
+    if input_path.is_dir() and not output_path.is_dir():
         raise ValueError("Cannot output to a file when input is a directory")
     
     if not output_path.exists():
