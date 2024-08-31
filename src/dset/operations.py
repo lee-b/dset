@@ -1,5 +1,6 @@
 import json
 import yaml
+import argparse
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 from dset.openai_api import ask_yes_no_question, generate_text
