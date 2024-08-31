@@ -9,13 +9,13 @@ from dset.models import JsonLEntry
 
 CHUNK_SIZE = 10  # Number of reasons to collect before summarizing
 
-def summarize_reasons(reasons: List[str]) -> str:
+def summarize_reasons(config, reasons: List[str]) -> str:
     prompt = f"Summarize the following reasons:\n\n" + "\n".join(reasons)
-    return generate_text(prompt)
+    return generate_text(config, prompt)
 
-def update_summary(previous_summary: str, chunk_summary: str) -> str:
+def update_summary(config, previous_summary: str, chunk_summary: str) -> str:
     prompt = f"Combine and summarize these two summaries:\n\nPrevious summary: {previous_summary}\n\nNew chunk summary: {chunk_summary}"
-    return generate_text(prompt)
+    return generate_text(config, prompt)
 
 def process_entries(dataset: ReadableDataSet, processor, config) -> Tuple[bool, List[str], str]:
     all_yes = True
@@ -35,18 +35,18 @@ def process_entries(dataset: ReadableDataSet, processor, config) -> Tuple[bool, 
             current_chunk.append(result['reason'])
             
             if len(current_chunk) >= CHUNK_SIZE:
-                chunk_summary = summarize_reasons(current_chunk)
+                chunk_summary = summarize_reasons(config, current_chunk)
                 if current_summary:
-                    current_summary = update_summary(current_summary, chunk_summary)
+                    current_summary = update_summary(config, current_summary, chunk_summary)
                 else:
                     current_summary = chunk_summary
                 current_chunk.clear()
     
     # Process any remaining reasons in the last chunk
     if current_chunk:
-        chunk_summary = summarize_reasons(current_chunk)
+        chunk_summary = summarize_reasons(config, current_chunk)
         if current_summary:
-            current_summary = update_summary(current_summary, chunk_summary)
+            current_summary = update_summary(config, current_summary, chunk_summary)
         else:
             current_summary = chunk_summary
     
@@ -56,7 +56,7 @@ def ask_operation(config) -> bool:
     dataset = ReadableDataSet(config.args.input_path)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
+        return ask_yes_no_question(config, f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
     all_yes, reasons, summary = process_entries(dataset, processor, config)
     
@@ -74,7 +74,7 @@ def assert_operation(config) -> bool:
     dataset = ReadableDataSet(config.args.input_path)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
+        return ask_yes_no_question(config, f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
     all_yes, reasons, summary = process_entries(dataset, processor, config)
     
@@ -125,7 +125,8 @@ def filter_operation(config) -> bool:
     if output_path.is_file() and input_path.is_dir():
         raise ValueError("Cannot output to a file when input is a directory")
     
-    output_path.mkdir(parents=True, exist_ok=True)
+    if not output_path.exists():
+        output_path.mkdir(parents=True, exist_ok=True)
     
     filtered_count = 0
     if output_path.is_dir():
@@ -136,7 +137,7 @@ def filter_operation(config) -> bool:
     input_dataset = ReadableDataSet(input_path)
     with WriteableDataSet(output_file) as output_dataset:
         for entry in input_dataset.process(lambda x: x):
-            include = ask_yes_no_question(f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}")['answer']
+            include = ask_yes_no_question(config, f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}")['answer']
             if include:
                 output_dataset.write(entry)
                 filtered_count += 1
@@ -186,14 +187,14 @@ def generate_operation(config) -> bool:
     
     with WriteableDataSet(output_file) as output_dataset:
         for _ in range(config.args.num_entries):
-            entry = generate_entry(config.args.raw_user_prompt)
+            entry = generate_entry(config)
             output_dataset.write(entry)
     
     print(f"Generated {config.args.num_entries} entries into {output_file}")
     return True
 
-def generate_entry(prompt):
-    return json.loads(generate_text(f"Generate a JSON entry based on this prompt: {prompt}"))
+def generate_entry(config):
+    return json.loads(generate_text(config, f"Generate a JSON entry based on this prompt: {config.args.raw_user_prompt}"))
 
 def batch_operation(config) -> bool:
     print(f"Executing batch operations from {config.args.yaml_file}")

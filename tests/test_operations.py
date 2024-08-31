@@ -67,7 +67,7 @@ def test_split_operation():
     assert split_operation(config)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
-def test_ask_operation(mock_ask_yes_no_question, capsys):
+def test_ask_operation(mock_ask_yes_no_question):
     test_data = [
         {"name": "Alice", "age": 30},
         {"name": "Bob", "age": 25},
