@@ -46,10 +46,34 @@ def split_operation(input_path, output_prefix, max_size):
     dataset = DataSet(input_path)
     dataset.split(output_prefix, max_size)
 
-# Placeholder function for filter operation
-def filter_operation(input_path, output_path):
+def filter_operation(input_path, output_path, requirement):
     print(f"Filtering data from {input_path} to {output_path}")
-    # Implement filtering logic here
+    print(f"Requirement: {requirement}")
+    
+    dataset = DataSet(input_path)
+    
+    def processor(entry):
+        question = f"Does the following entry meet this requirement: '{requirement}'?\nEntry: {json.dumps(entry)}"
+        result = ask_yes_no_question(question)
+        return result['answer']
+    
+    filtered_entries = []
+    results = dataset.process(processor)
+    
+    for entry, should_include in zip(dataset.get_entries(), results):
+        if should_include:
+            filtered_entries.append(entry)
+    
+    # Create the output directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    # Write the filtered entries to the output file
+    with open(output_path, 'w') as outfile:
+        for entry in filtered_entries:
+            json.dump(entry, outfile)
+            outfile.write('\n')
+    
+    print(f"Filtered {len(filtered_entries)} entries into {output_path}")
 
 def merge_operation(input_paths, output_path):
     print(f"Merging data from {input_paths} to {output_path}")
