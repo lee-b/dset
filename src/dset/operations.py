@@ -1,6 +1,7 @@
 import json
+import yaml
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from dset.openai_api import ask_yes_no_question, generate_text
 from dset.dataset import ReadableDataSet, WriteableDataSet
 from dset.models import JsonLEntry
@@ -50,7 +51,7 @@ def process_entries(dataset: ReadableDataSet, processor, config) -> Tuple[bool, 
     
     return all_yes, reasons, current_summary
 
-def ask_operation(config):
+def ask_operation(config) -> bool:
     dataset = ReadableDataSet(config.args.input_path)
     
     def processor(entry):
@@ -66,9 +67,9 @@ def ask_operation(config):
     print(f"\nReasons have been saved to: {config.args.reasons_output}")
     print(f"\nSummary of reasons:\n{summary}")
     
-    return all_yes, config.args.reasons_output, summary
+    return all_yes
 
-def assert_operation(config):
+def assert_operation(config) -> bool:
     dataset = ReadableDataSet(config.args.input_path)
     
     def processor(entry):
@@ -83,9 +84,9 @@ def assert_operation(config):
         print(f"\nReasons have been saved to: {config.args.reasons_output}")
         print(f"\nSummary of reasons:\n{summary}")
     
-    return all_yes, config.args.reasons_output, summary
+    return all_yes
 
-def split_operation(config):
+def split_operation(config) -> bool:
     input_dataset = ReadableDataSet(config.args.input_path)
     output_datasets = []
     current_size = 0
@@ -111,9 +112,9 @@ def split_operation(config):
         output_datasets.append(current_dataset)
     
     print(f"Split into {len(output_datasets)} datasets")
-    return output_datasets
+    return True
 
-def filter_operation(config):
+def filter_operation(config) -> bool:
     print(f"Filtering data from {config.args.input_path} to {config.args.output_path}")
     print(f"Requirement: {config.args.raw_user_prompt}")
     
@@ -140,8 +141,9 @@ def filter_operation(config):
                 filtered_count += 1
     
     print(f"Filtered {filtered_count} entries into {output_file}")
+    return True
 
-def merge_operation(config):
+def merge_operation(config) -> bool:
     print(f"Merging data from {config.args.input_path} to {config.args.output_path}")
     
     output_path = Path(config.args.output_path)
@@ -167,8 +169,9 @@ def merge_operation(config):
                     merged_count += 1
     
     print(f"Merged {merged_count} unique entries into {output_file}")
+    return True
 
-def generate_operation(config):
+def generate_operation(config) -> bool:
     print(f"Generating {config.args.num_entries} entries to {config.args.output_path}")
     print(f"Prompt: {config.args.raw_user_prompt}")
     
@@ -186,6 +189,43 @@ def generate_operation(config):
             output_dataset.write(entry)
     
     print(f"Generated {config.args.num_entries} entries into {output_file}")
+    return True
 
 def generate_entry(prompt):
     return json.loads(generate_text(f"Generate a JSON entry based on this prompt: {prompt}"))
+
+def batch_operation(config) -> bool:
+    print(f"Executing batch operations from {config.args.yaml_file}")
+    
+    try:
+        with open(config.args.yaml_file, 'r') as yaml_file:
+            batch_config = yaml.safe_load(yaml_file)
+    except Exception as e:
+        print(f"Error reading YAML file: {e}")
+        return False
+
+    if 'steps' not in batch_config or not isinstance(batch_config['steps'], list):
+        print("Invalid YAML structure: 'steps' field must be a list")
+        return False
+
+    for step in batch_config['steps']:
+        if 'operation' not in step:
+            print(f"Invalid step: {step}")
+            return False
+
+        operation = step['operation']
+        args = argparse.Namespace(**step)
+        args.func = globals().get(f"{operation}_operation")
+
+        if not args.func:
+            print(f"Unknown operation: {operation}")
+            return False
+
+        print(f"Executing {operation} operation")
+        success = args.func(argparse.Namespace(**step))
+        if not success:
+            print(f"Operation {operation} failed")
+            return False
+
+    print("Batch operations completed successfully")
+    return True
