@@ -13,12 +13,12 @@ def test_batch_operation():
         steps:
           - operation: generate
             output: generated_data.jsonl
-            raw_user_prompt: "Generate a person's name and age"
+            raw_user_prompt: "Generate a simple profile with name, age (over 30), and favorite color"
             num_entries: 5
           - operation: filter
             input: generated_data.jsonl
-            output: filtered_data.jsonl
-            raw_user_prompt: "Is the person's age over 30?"
+            output: verified_data.jsonl
+            raw_user_prompt: "Verify that all fields (name, age, favorite color) are populated, the entry looks correct according to the prompt, and the age is over 30"
         """
         temp_file.write(yaml_content)
         temp_file_path = temp_file.name
@@ -41,6 +41,18 @@ def test_batch_operation():
             # Assert that both operations were called
             mock_generate.assert_called_once()
             mock_filter.assert_called_once()
+
+            # Check the arguments passed to generate_operation
+            generate_args = mock_generate.call_args[0][0]
+            assert generate_args.output == "generated_data.jsonl"
+            assert generate_args.raw_user_prompt == "Generate a simple profile with name, age (over 30), and favorite color"
+            assert generate_args.num_entries == 5
+
+            # Check the arguments passed to filter_operation
+            filter_args = mock_filter.call_args[0][0]
+            assert filter_args.input_path == "generated_data.jsonl"
+            assert filter_args.output_path == "verified_data.jsonl"
+            assert filter_args.raw_user_prompt == "Verify that all fields (name, age, favorite color) are populated, the entry looks correct according to the prompt, and the age is over 30"
 
     finally:
         # Clean up the temporary file
