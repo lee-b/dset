@@ -62,12 +62,43 @@ def generate_synthetic_dataset(input_file, output_file, model):
             response = generate_synthetic_item()
             f_out.write(json.dumps({'text': response}) + '\n')
 
+def generate_dataset_from_prompt_file(prompt_file, output_file, model, num_items=100):
+    openai.api_key = os.environ.get('OPENAI_API_KEY')
+    openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+
+    def generate_item(prompt, max_tokens=256):
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens,
+                n=1,
+                temperature=0.7,
+            )
+            return response.choices[0].message['content'].strip()
+        except Exception as e:
+            print(f"Error in item generation: {e}", file=sys.stderr)
+            return ""
+
+    with open(prompt_file, 'r') as f_prompt:
+        prompt = f_prompt.read().strip()
+
+    with open(output_file, 'w') as f_out:
+        for _ in range(num_items):
+            response = generate_item(prompt)
+            f_out.write(json.dumps({'text': response}) + '\n')
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', help='input file')
     parser.add_argument('-o', '--output', help='output file')
     parser.add_argument('--generate', action='store_true', help='generate synthetic dataset')
     parser.add_argument('--model', default='gpt-4o', help='model to use for text generation')
+    parser.add_argument('--prompt-file', help='file containing prompt for dataset generation')
+    parser.add_argument('--num-items', type=int, default=100, help='number of items to generate when using a prompt file')
     args = parser.parse_args()
 
     if args.input and args.output:
@@ -77,7 +108,9 @@ def main():
         input_file = sys.stdin
         output_file = sys.stdout
 
-    if args.generate:
+    if args.prompt_file:
+        generate_dataset_from_prompt_file(args.prompt_file, output_file, model=args.model, num_items=args.num_items)
+    elif args.generate:
         generate_synthetic_dataset(input_file, output_file, model=args.model)
     else:
         process_dataset(input_file, output_file, model=args.model)
