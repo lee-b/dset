@@ -19,7 +19,7 @@ def create_test_data(data, is_dir=False):
             json.dump(item, f)
             f.write('\n')
 
-    return str(file_path)
+    return str(file_path if not is_dir else Path(file_path).parent)
 
 def mock_ask_yes_no_question(config, question):
     return {"answer": True, "reason": "Mock reason"}
