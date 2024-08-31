@@ -1,8 +1,8 @@
-# DSET: Automatic Dataset Processing using an LLM
+# `dset`: Automatic Dataset Processing using an LLM
+
+**`dset` is a command-line tool for processing and manipulating datasets in JSONL format. It provides various operations to filter, merge, split, analyze, and generate datasets.**
 
 ## NOTE WELL: This is currently PRE-ALPHA, mostly "written" with aider in a few hours, and has NOT been tested at all yet, save for a pytests, which I don't know are correct, becuase they too were written by aider and I've barely skimmed the code as yet.
-
-DSET is a command-line tool for processing and manipulating datasets in JSONL format. It provides various operations to filter, merge, split, analyze, and generate datasets.
 
 ## Features
 
