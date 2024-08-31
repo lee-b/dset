@@ -94,13 +94,15 @@ def split_operation(config):
     output_datasets = []
     current_size = 0
     current_dataset = None
+    file_count = 0
     
-    for i, entry in enumerate(input_dataset.process(lambda x: x)):
+    for entry in input_dataset.process(lambda x: x):
         if current_size == 0 or current_size >= config.args.max_size:
             if current_dataset:
                 current_dataset.__exit__(None, None, None)
                 output_datasets.append(current_dataset)
-            output_path = Path(config.args.output_path) / f"split_{i // config.args.max_size + 1}.jsonl"
+            file_count += 1
+            output_path = Path(config.args.output_path) / f"split_{file_count}.jsonl"
             current_dataset = WriteableDataSet(output_path)
             current_dataset.__enter__()
             current_size = 0
@@ -135,20 +137,13 @@ def filter_operation(config):
     
     input_dataset = ReadableDataSet(input_path)
     with WriteableDataSet(output_file) as output_dataset:
-        for include, entry in process_dataset(input_dataset, config.args.raw_user_prompt):
+        for entry in input_dataset.process(lambda x: x):
+            include = ask_yes_no_question(f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}")['answer']
             if include:
                 output_dataset.write(entry)
                 filtered_count += 1
     
     print(f"Filtered {filtered_count} entries into {output_file}")
-
-def process_dataset(dataset, prompt):
-    def processor(entry):
-        question = f"Does the following entry meet this requirement: '{prompt}'?\nEntry: {json.dumps(entry)}"
-        result = ask_yes_no_question(question)
-        return result['answer'], entry
-    
-    return dataset.process(processor)
 
 def merge_operation(config):
     print(f"Merging data from {config.args.input_path} to {config.args.output_path}")
