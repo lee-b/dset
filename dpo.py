@@ -8,14 +8,14 @@ import openai
 class DatasetItem(BaseModel):
     text: str
 
-def process_dataset(input_file, output_file):
+def process_dataset(input_file, output_file, model="gpt-4"):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
     def generate_text(prompt, max_tokens=256):
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4",
+                model=model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
@@ -36,14 +36,14 @@ def process_dataset(input_file, output_file):
             response = generate_text(text)
             f_out.write(json.dumps({'text': response}) + '\n')
 
-def generate_synthetic_dataset(input_file, output_file):
+def generate_synthetic_dataset(input_file, output_file, model="gpt-4"):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
     def generate_synthetic_item(prompt="Generate a synthetic dataset item", max_tokens=256):
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4",
+                model=model,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
@@ -67,6 +67,7 @@ def main():
     parser.add_argument('-i', '--input', help='input file')
     parser.add_argument('-o', '--output', help='output file')
     parser.add_argument('--generate', action='store_true', help='generate synthetic dataset')
+    parser.add_argument('--model', default='gpt-4', help='model to use for text generation')
     args = parser.parse_args()
 
     if args.input and args.output:
@@ -77,9 +78,9 @@ def main():
         output_file = sys.stdout
 
     if args.generate:
-        generate_synthetic_dataset(input_file, output_file)
+        generate_synthetic_dataset(input_file, output_file, model=args.model)
     else:
-        process_dataset(input_file, output_file)
+        process_dataset(input_file, output_file, model=args.model)
 
 if __name__ == '__main__':
     main()
