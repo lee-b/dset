@@ -10,10 +10,11 @@ class Config:
     operation: Callable
     question: str = None
     max_size: int = None
+    requirement: str = None
 
 def filter_handler(args):
     from dset.operations import filter_operation
-    filter_operation(args.input, args.output)
+    filter_operation(args.input, args.output, args.requirement)
 
 def merge_handler(args):
     from dset.operations import merge_operation
@@ -41,6 +42,7 @@ def build_config() -> Config:
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
     filter_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     filter_parser.add_argument('--output', required=True, help='Output dataset file or directory')
+    filter_parser.add_argument('--requirement', required=True, help='Requirement for filtering entries')
     filter_parser.set_defaults(func=filter_handler)
 
     # Merge subcommand
@@ -75,5 +77,6 @@ def build_config() -> Config:
         output=args.output,
         operation=args.func,
         question=getattr(args, 'question', None),
-        max_size=getattr(args, 'max_size', None)
+        max_size=getattr(args, 'max_size', None),
+        requirement=getattr(args, 'requirement', None)
     )
