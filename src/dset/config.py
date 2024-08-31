@@ -37,19 +37,19 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     # Ask subcommand
     ask_parser = subparsers.add_parser('ask', help='Ask a question about the dataset')
     ask_parser.add_argument('input', help='Input dataset file or directory')
-    ask_parser.add_argument('raw_user_prompt', help='Question to ask about the dataset')
+    ask_parser.add_argument('raw_user_prompt', metavar='user_prompt', help='Question to ask about the dataset')
     ask_parser.set_defaults(func=ask_operation)
 
     # Assert subcommand
     assert_parser = subparsers.add_parser('assert', help='Assert a condition about the dataset')
     assert_parser.add_argument('input', help='Input dataset file or directory')
-    assert_parser.add_argument('raw_user_prompt', help='Condition to assert about the dataset')
+    assert_parser.add_argument('raw_user_prompt', metavar='user_prompt', help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
 
     # Generate subcommand
     gen_parser = subparsers.add_parser('gen', help='Generate a dataset of jsonl entries')
     gen_parser.add_argument('output', help='Output dataset file')
-    gen_parser.add_argument('raw_user_prompt', help='Prompt for generating entries')
+    gen_parser.add_argument('raw_user_prompt', metavar='user_prompt', help='Prompt for generating entries')
     gen_parser.add_argument('num_entries', type=int, help='Number of entries to generate')
     gen_parser.set_defaults(func=generate_operation)
 
