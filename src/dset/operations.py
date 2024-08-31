@@ -8,7 +8,7 @@ def ask_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry.to_dict())}")
+        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
     all_yes = True
     reasons = []
@@ -31,7 +31,7 @@ def assert_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry.to_dict())}")
+        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
     all_yes = True
     failure_reasons = []
@@ -61,7 +61,7 @@ def filter_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry.to_dict())}"
+        question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}"
         result = ask_yes_no_question(question)
         return result['answer'], entry
     
@@ -71,7 +71,7 @@ def filter_operation(config):
     with open(config.args.output, 'w') as outfile:
         for include, entry in dataset.process(processor):
             if include:
-                json.dump(entry.to_dict(), outfile)
+                json.dump(entry, outfile)
                 outfile.write('\n')
                 filtered_count += 1
     
@@ -89,8 +89,8 @@ def merge_operation(config):
         for input_path in config.args.input.split(','):
             dataset = DataSet(input_path.strip())
             
-            for entry in dataset.entries():
-                entry_str = json.dumps(entry.to_dict(), sort_keys=True)
+            for entry in dataset.process(lambda x: x):
+                entry_str = json.dumps(entry, sort_keys=True)
                 if entry_str not in seen_entries:
                     seen_entries.add(entry_str)
                     outfile.write(entry_str + '\n')
@@ -107,10 +107,10 @@ def generate_operation(config):
     with open(config.args.output, 'w') as outfile:
         for _ in range(config.args.num_entries):
             entry = generate_entry(config.args.raw_user_prompt)
-            json.dump(entry.to_dict(), outfile)
+            json.dump(entry, outfile)
             outfile.write('\n')
     
     print(f"Generated {config.args.num_entries} entries into {config.args.output}")
 
 def generate_entry(prompt):
-    return generate_text(f"Generate a JSON entry based on this prompt: {prompt}")
+    return json.loads(generate_text(f"Generate a JSON entry based on this prompt: {prompt}"))
