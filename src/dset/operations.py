@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dset.openai_api import ask_yes_no_question, generate_text
 from dset.dataset import DataSet
 from dset.models import JsonLEntry
@@ -48,7 +49,7 @@ def assert_operation(config):
         print("\nReasons for failures:")
         for reason in failure_reasons:
             print(f"- {reason}")
-        exit(1)
+        sys.exit(1)
 
 def split_operation(config):
     dataset = DataSet(config.args.input)
