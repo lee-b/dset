@@ -1,4 +1,3 @@
-import os
 import tempfile
 import yaml
 from unittest.mock import patch
@@ -26,7 +25,7 @@ def test_batch_operation():
     try:
         # Create a mock Config object
         args = argparse.Namespace(yaml_file=temp_file_path)
-        config = Config(args=args)
+        config = Config(args=args, smart_model="gpt-4", fast_model="gpt-3.5-turbo")
 
         # Mock the generate_operation and filter_operation functions
         with patch('dset.operations.generate_operation', return_value=True) as mock_generate, \
@@ -56,6 +55,7 @@ def test_batch_operation():
 
     finally:
         # Clean up the temporary file
+        import os
         os.unlink(temp_file_path)
 
 if __name__ == "__main__":
