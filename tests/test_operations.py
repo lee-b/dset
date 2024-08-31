@@ -1,0 +1,136 @@
+import json
+import os
+import tempfile
+from dset.config import Config
+from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
+from argparse import Namespace
+
+def create_test_data(data):
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.jsonl') as temp:
+        for entry in data:
+            json.dump(entry, temp)
+            temp.write('\n')
+    return temp.name
+
+def test_filter_operation():
+    test_data = [
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25},
+        {"name": "Charlie", "age": 35}
+    ]
+    input_file = create_test_data(test_data)
+    output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jsonl').name
+
+    args = Namespace(input=input_file, output=output_file, raw_user_prompt="age greater than 28")
+    config = Config(args)
+
+    filter_operation(config)
+
+    with open(output_file, 'r') as f:
+        filtered_data = [json.loads(line) for line in f]
+
+    assert len(filtered_data) == 2
+    assert all(entry['age'] > 28 for entry in filtered_data)
+
+    os.unlink(input_file)
+    os.unlink(output_file)
+
+def test_merge_operation():
+    test_data1 = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+    test_data2 = [{"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}]
+    
+    input_file1 = create_test_data(test_data1)
+    input_file2 = create_test_data(test_data2)
+    output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jsonl').name
+
+    args = Namespace(input=f"{input_file1},{input_file2}", output=output_file)
+    config = Config(args)
+
+    merge_operation(config)
+
+    with open(output_file, 'r') as f:
+        merged_data = [json.loads(line) for line in f]
+
+    assert len(merged_data) == 3
+    assert set(entry['name'] for entry in merged_data) == {"Alice", "Bob", "Charlie"}
+
+    os.unlink(input_file1)
+    os.unlink(input_file2)
+    os.unlink(output_file)
+
+def test_split_operation():
+    test_data = [{"id": i} for i in range(100)]
+    input_file = create_test_data(test_data)
+    output_prefix = tempfile.mkdtemp()
+
+    args = Namespace(input=input_file, output=f"{output_prefix}/split", max_size=1000)
+    config = Config(args)
+
+    split_operation(config)
+
+    split_files = [f for f in os.listdir(output_prefix) if f.startswith("split")]
+    assert len(split_files) > 1
+
+    total_entries = 0
+    for split_file in split_files:
+        with open(os.path.join(output_prefix, split_file), 'r') as f:
+            total_entries += sum(1 for _ in f)
+
+    assert total_entries == 100
+
+    os.unlink(input_file)
+    for split_file in split_files:
+        os.unlink(os.path.join(output_prefix, split_file))
+    os.rmdir(output_prefix)
+
+def test_ask_operation(capsys):
+    test_data = [
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25},
+        {"name": "Charlie", "age": 35}
+    ]
+    input_file = create_test_data(test_data)
+
+    args = Namespace(input=input_file, raw_user_prompt="Are all people older than 20?")
+    config = Config(args)
+
+    ask_operation(config)
+
+    captured = capsys.readouterr()
+    assert "Yes, that is the case for all entries." in captured.out
+
+    os.unlink(input_file)
+
+def test_assert_operation():
+    test_data = [
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25},
+        {"name": "Charlie", "age": 35}
+    ]
+    input_file = create_test_data(test_data)
+
+    args = Namespace(input=input_file, raw_user_prompt="All ages are greater than 20")
+    config = Config(args)
+
+    try:
+        assert_operation(config)
+    except SystemExit as e:
+        assert e.code == 0  # Assert operation should pass
+
+    os.unlink(input_file)
+
+def test_generate_operation():
+    output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jsonl').name
+
+    args = Namespace(output=output_file, raw_user_prompt="Generate a person with name and age", num_entries=5)
+    config = Config(args)
+
+    generate_operation(config)
+
+    with open(output_file, 'r') as f:
+        generated_data = [json.loads(line) for line in f]
+
+    assert len(generated_data) == 5
+    assert all('name' in entry and 'age' in entry for entry in generated_data)
+
+    os.unlink(output_file)

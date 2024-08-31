@@ -1,34 +1,19 @@
 [tool.poetry]
 name = "dset"
 version = "0.1.0"
-description = "A project for DSET (Dataset Processing Operations)"
-authors = ["Lee Braiden <leebraid@gmail.com>"]
-license = "AGPL-3.0-only"
+description = "Dataset Processing Operations"
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-homepage = "https://github.com/lee-b/dset"
-repository = "https://github.com/lee-b/dset"
-keywords = ["dataset", "processing", "operations"]
-packages = [{include = "dset", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "^2.26.0"
-pydantic = "^1.8.2"
-PyYAML = "^6.0"
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.3.1"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-dset = "dset.__main__:main"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
