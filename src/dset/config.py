@@ -12,7 +12,7 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     parser = argparse.ArgumentParser(description="DSET: Dataset Processing Operations")
     parser.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
-    subparsers = parser.add_subparsers(dest='operation', help='Operation to perform on the dataset')
+    subparsers = parser.add_subparsers(dest='operation', help='Operation to perform on the dataset', required=True)
 
     # Filter subcommand
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
@@ -46,16 +46,8 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
 
-    if len(sys.argv) == 1:
-        parser.print_help()
-        return False, None
-
     # Note: We're not catching SystemExit here. This allows argparse to handle --help and --version
     # flags naturally, exiting the program after displaying the appropriate information.
     args = parser.parse_args()
-
-    if not hasattr(args, 'func'):
-        parser.print_help()
-        return False, None
 
     return True, Config(args=args)
