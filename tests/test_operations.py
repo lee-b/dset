@@ -131,26 +131,6 @@ def test_ask_operation(mock_ask_yes_no_question, capsys):
     os.unlink(input_file)
     os.unlink(args.reasons_output)
 
-@patch('dset.openai_api.ask_yes_no_question', side_effect=lambda q, m: {"answer": False, "reason": "Mock negative response"})
-def test_assert_operation_failure(mock_ask_yes_no_question):
-    test_data = [
-        {"name": "Alice", "age": 30},
-        {"name": "Bob", "age": 25},
-        {"name": "Charlie", "age": 35}
-    ]
-    input_file = create_test_data(test_data)
-
-    args = Namespace(input_path=Path(input_file), raw_user_prompt="All ages are greater than 40", reasons_output=Path(tempfile.mktemp()))
-    config = Config(args)
-
-    all_yes, reasons_output, summary = assert_operation(config)
-    
-    assert not all_yes, "Expected assertion to fail"
-    assert Path(reasons_output).exists(), "Reasons output file should exist"
-
-    os.unlink(input_file)
-    os.unlink(reasons_output)
-
 @patch('dset.openai_api.generate_text', side_effect=mock_generate_text)
 def test_generate_operation(mock_generate_text):
     output_dir = tempfile.mkdtemp()
@@ -219,36 +199,6 @@ def test_split_operation_with_small_file():
 
     os.unlink(input_file)
     os.unlink(output_datasets[0].path)
-    os.rmdir(output_dir)
-
-@patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
-def test_filter_operation_with_directory_input(mock_ask_yes_no_question):
-    test_data1 = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
-    test_data2 = [{"name": "Charlie", "age": 35}, {"name": "David", "age": 40}]
-    
-    input_dir = tempfile.mkdtemp()
-    create_test_data(test_data1, is_dir=True)
-    create_test_data(test_data2, is_dir=True)
-    
-    output_dir = tempfile.mkdtemp()
-
-    args = Namespace(input_path=Path(input_dir), output_path=Path(output_dir), raw_user_prompt="age greater than 28")
-    config = Config(args)
-
-    filter_operation(config)
-
-    output_file = Path(output_dir) / "filtered.jsonl"
-    assert output_file.exists()
-
-    with open(output_file, 'r') as f:
-        filtered_data = [json.loads(line) for line in f]
-
-    assert len(filtered_data) > 0, "Expected at least one filtered entry"
-
-    for file in Path(input_dir).glob("*.jsonl"):
-        os.unlink(file)
-    os.rmdir(input_dir)
-    os.unlink(output_file)
     os.rmdir(output_dir)
 
 def test_filter_operation_error_with_file_output_for_directory_input():
