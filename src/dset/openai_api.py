@@ -1,6 +1,7 @@
 import requests
 import os
 import json
+from dset.models import JsonLEntry
 
 def call_openai_api(prompt, model="gpt-3.5-turbo"):
     api_key = os.environ.get("OPENAI_API_KEY")
@@ -90,7 +91,14 @@ def generate_text(prompt, model="gpt-3.5-turbo"):
         "messages": [
             {"role": "system", "content": "You are a helpful assistant that generates JSON entries based on prompts."},
             {"role": "user", "content": prompt}
-        ]
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "type": "object",
+                "additionalProperties": True
+            }
+        }
     }
 
     response = requests.post(
@@ -100,6 +108,8 @@ def generate_text(prompt, model="gpt-3.5-turbo"):
     )
 
     if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
+        result = response.json()["choices"][0]["message"]["content"]
+        json_data = json.loads(result)
+        return JsonLEntry(**json_data)
     else:
         raise Exception(f"API call failed with status code {response.status_code}: {response.text}")

@@ -2,12 +2,13 @@ import json
 import os
 from dset.openai_api import ask_yes_no_question, generate_text
 from dset.dataset import DataSet
+from dset.models import JsonLEntry
 
 def ask_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
+        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry.to_dict())}")
     
     all_yes = True
     reasons = []
@@ -30,7 +31,7 @@ def assert_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
+        return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry.to_dict())}")
     
     all_yes = True
     failure_reasons = []
@@ -60,7 +61,7 @@ def filter_operation(config):
     dataset = DataSet(config.args.input)
     
     def processor(entry):
-        question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}"
+        question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry.to_dict())}"
         result = ask_yes_no_question(question)
         return result['answer'], entry
     
@@ -70,7 +71,7 @@ def filter_operation(config):
     with open(config.args.output, 'w') as outfile:
         for include, entry in dataset.process(processor):
             if include:
-                json.dump(entry, outfile)
+                json.dump(entry.to_dict(), outfile)
                 outfile.write('\n')
                 filtered_count += 1
     
@@ -89,7 +90,7 @@ def merge_operation(config):
             dataset = DataSet(input_path.strip())
             
             for entry in dataset.entries():
-                entry_str = json.dumps(entry, sort_keys=True)
+                entry_str = json.dumps(entry.to_dict(), sort_keys=True)
                 if entry_str not in seen_entries:
                     seen_entries.add(entry_str)
                     outfile.write(entry_str + '\n')
@@ -106,20 +107,10 @@ def generate_operation(config):
     with open(config.args.output, 'w') as outfile:
         for _ in range(config.args.num_entries):
             entry = generate_entry(config.args.raw_user_prompt)
-            json.dump(entry, outfile)
+            json.dump(entry.to_dict(), outfile)
             outfile.write('\n')
     
     print(f"Generated {config.args.num_entries} entries into {config.args.output}")
 
 def generate_entry(prompt):
-    # Use the generate_text function from openai_api to create an entry
-    generated_text = generate_text(f"Generate a JSON entry based on this prompt: {prompt}")
-    
-    try:
-        # Attempt to parse the generated text as JSON
-        entry = json.loads(generated_text)
-    except json.JSONDecodeError:
-        # If parsing fails, return a simple dictionary with the raw text
-        entry = {"generated_text": generated_text}
-    
-    return entry
+    return generate_text(f"Generate a JSON entry based on this prompt: {prompt}")
