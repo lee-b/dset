@@ -122,8 +122,8 @@ def test_ask_operation(mock_ask_yes_no_question, capsys):
     os.unlink(input_file)
     os.unlink(args.reasons_output)
 
-@patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
-def test_assert_operation(mock_ask_yes_no_question):
+@patch('dset.openai_api.ask_yes_no_question', side_effect=lambda q, m: {"answer": False, "reason": "Mock negative response"})
+def test_assert_operation_failure(mock_ask_yes_no_question):
     test_data = [
         {"name": "Alice", "age": 30},
         {"name": "Bob", "age": 25},
@@ -131,13 +131,13 @@ def test_assert_operation(mock_ask_yes_no_question):
     ]
     input_file = create_test_data(test_data)
 
-    args = Namespace(input_path=Path(input_file), raw_user_prompt="All ages are greater than 20", reasons_output=Path(tempfile.mktemp()))
+    args = Namespace(input_path=Path(input_file), raw_user_prompt="All ages are greater than 40", reasons_output=Path(tempfile.mktemp()))
     config = Config(args)
 
-    try:
+    with pytest.raises(SystemExit) as excinfo:
         assert_operation(config)
-    except SystemExit as e:
-        assert e.code == 0  # Assert operation should pass
+    
+    assert excinfo.value.code == 1  # Assert operation should fail
 
     os.unlink(input_file)
     os.unlink(args.reasons_output)
@@ -205,26 +205,6 @@ def test_split_operation_with_small_file(mock_split):
 
     os.unlink(input_file)
     os.rmdir(output_dir)
-
-@patch('dset.openai_api.ask_yes_no_question', side_effect=lambda q, m: {"answer": False, "reason": "Mock negative response"})
-def test_assert_operation_failure(mock_ask_yes_no_question):
-    test_data = [
-        {"name": "Alice", "age": 30},
-        {"name": "Bob", "age": 25},
-        {"name": "Charlie", "age": 35}
-    ]
-    input_file = create_test_data(test_data)
-
-    args = Namespace(input_path=Path(input_file), raw_user_prompt="All ages are greater than 40", reasons_output=Path(tempfile.mktemp()))
-    config = Config(args)
-
-    with pytest.raises(SystemExit) as excinfo:
-        assert_operation(config)
-    
-    assert excinfo.value.code == 1  # Assert operation should fail
-
-    os.unlink(input_file)
-    os.unlink(args.reasons_output)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
 def test_filter_operation_with_directory_input(mock_ask_yes_no_question):
