@@ -1,6 +1,6 @@
 import json
 import os
-from dset.openai_api import ask_yes_no_question
+from dset.openai_api import ask_yes_no_question, generate_text
 from dset.dataset import DataSet
 
 def ask_operation(config):
@@ -112,7 +112,14 @@ def generate_operation(config):
     print(f"Generated {config.args.num_entries} entries into {config.args.output}")
 
 def generate_entry(prompt):
-    # This function should use an appropriate method to generate a single entry
-    # based on the given prompt. For now, we'll use a placeholder implementation.
-    # You may want to replace this with a call to a language model API or another generation method.
-    return {"generated": "entry", "based_on": prompt}
+    # Use the generate_text function from openai_api to create an entry
+    generated_text = generate_text(f"Generate a JSON entry based on this prompt: {prompt}")
+    
+    try:
+        # Attempt to parse the generated text as JSON
+        entry = json.loads(generated_text)
+    except json.JSONDecodeError:
+        # If parsing fails, return a simple dictionary with the raw text
+        entry = {"generated_text": generated_text}
+    
+    return entry
