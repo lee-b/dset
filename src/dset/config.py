@@ -46,8 +46,14 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
 
-    # Note: We're not catching SystemExit here. This allows argparse to handle --help and --version
-    # flags naturally, exiting the program after displaying the appropriate information.
-    args = parser.parse_args()
+    # Check if no arguments were provided
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return False, None
 
-    return True, Config(args=args)
+    try:
+        args = parser.parse_args()
+        return True, Config(args=args)
+    except SystemExit:
+        # This catches the SystemExit raised by argparse when --help or --version is used
+        return False, None
