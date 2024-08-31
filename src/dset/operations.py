@@ -55,14 +55,11 @@ def filter_operation(config):
     def processor(entry):
         question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}"
         result = ask_yes_no_question(question)
-        return result['answer']
+        return result['answer'], entry
     
-    filtered_entries = []
     results = dataset.process(processor)
     
-    for entry, should_include in zip(dataset.get_entries(), results):
-        if should_include:
-            filtered_entries.append(entry)
+    filtered_entries = [entry for include, entry in results if include]
     
     # Create the output directory if it doesn't exist
     os.makedirs(os.path.dirname(config.args.output), exist_ok=True)
