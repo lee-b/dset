@@ -90,8 +90,30 @@ def assert_operation(config):
     return all_yes, config.args.reasons_output, summary
 
 def split_operation(config):
-    dataset = ReadableDataSet(config.args.input_path)
-    dataset.split(config.args.output_path, config.args.max_size)
+    input_dataset = ReadableDataSet(config.args.input_path)
+    output_datasets = []
+    current_size = 0
+    current_dataset = None
+    
+    for i, entry in enumerate(input_dataset.process(lambda x: x)):
+        if current_size == 0 or current_size >= config.args.max_size:
+            if current_dataset:
+                current_dataset.__exit__(None, None, None)
+                output_datasets.append(current_dataset)
+            output_path = Path(config.args.output_path) / f"split_{i // config.args.max_size + 1}.jsonl"
+            current_dataset = WriteableDataSet(output_path)
+            current_dataset.__enter__()
+            current_size = 0
+        
+        current_dataset.write(entry)
+        current_size += len(json.dumps(entry)) + 1  # +1 for newline
+    
+    if current_dataset:
+        current_dataset.__exit__(None, None, None)
+        output_datasets.append(current_dataset)
+    
+    print(f"Split into {len(output_datasets)} datasets")
+    return output_datasets
 
 def filter_operation(config):
     print(f"Filtering data from {config.args.input_path} to {config.args.output_path}")

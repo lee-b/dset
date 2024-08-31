@@ -86,8 +86,7 @@ def test_merge_operation():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-@patch('dset.dataset.ReadableDataSet.split')
-def test_split_operation(mock_split):
+def test_split_operation():
     test_data = [{"id": i} for i in range(100)]
     input_file = create_test_data(test_data)
     output_dir = tempfile.mkdtemp()
@@ -95,11 +94,21 @@ def test_split_operation(mock_split):
     args = Namespace(input_path=Path(input_file), output_path=Path(output_dir), max_size=1000)
     config = Config(args)
 
-    split_operation(config)
+    output_datasets = split_operation(config)
 
-    mock_split.assert_called_once_with(Path(output_dir), 1000)
+    assert len(output_datasets) > 0
+    total_entries = 0
+    for dataset in output_datasets:
+        assert dataset.path.exists()
+        with open(dataset.path, 'r') as f:
+            entries = [json.loads(line) for line in f]
+            total_entries += len(entries)
+    
+    assert total_entries == 100
 
     os.unlink(input_file)
+    for dataset in output_datasets:
+        os.unlink(dataset.path)
     os.rmdir(output_dir)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
@@ -188,8 +197,7 @@ def test_merge_operation_with_empty_file():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-@patch('dset.dataset.ReadableDataSet.split')
-def test_split_operation_with_small_file(mock_split):
+def test_split_operation_with_small_file():
     test_data = [{"id": i} for i in range(5)]
     input_file = create_test_data(test_data)
     output_dir = tempfile.mkdtemp()
@@ -197,11 +205,18 @@ def test_split_operation_with_small_file(mock_split):
     args = Namespace(input_path=Path(input_file), output_path=Path(output_dir), max_size=1000)
     config = Config(args)
 
-    split_operation(config)
+    output_datasets = split_operation(config)
 
-    mock_split.assert_called_once_with(Path(output_dir), 1000)
+    assert len(output_datasets) == 1
+    assert output_datasets[0].path.exists()
+
+    with open(output_datasets[0].path, 'r') as f:
+        split_data = [json.loads(line) for line in f]
+
+    assert len(split_data) == 5
 
     os.unlink(input_file)
+    os.unlink(output_datasets[0].path)
     os.rmdir(output_dir)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
