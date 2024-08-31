@@ -5,7 +5,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from dset.config import Config
-from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation, AssertionFailedException
+from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
 from argparse import Namespace
 
 def create_test_data(data, is_dir=False):
@@ -143,11 +143,13 @@ def test_assert_operation_failure(mock_ask_yes_no_question):
     args = Namespace(input_path=Path(input_file), raw_user_prompt="All ages are greater than 40", reasons_output=Path(tempfile.mktemp()))
     config = Config(args)
 
-    with pytest.raises(AssertionFailedException):
-        assert_operation(config)
+    all_yes, reasons_output, summary = assert_operation(config)
+    
+    assert not all_yes, "Expected assertion to fail"
+    assert Path(reasons_output).exists(), "Reasons output file should exist"
 
     os.unlink(input_file)
-    os.unlink(args.reasons_output)
+    os.unlink(reasons_output)
 
 @patch('dset.openai_api.generate_text', side_effect=mock_generate_text)
 def test_generate_operation(mock_generate_text):

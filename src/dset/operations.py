@@ -7,9 +7,6 @@ from dset.models import JsonLEntry
 
 CHUNK_SIZE = 10  # Number of reasons to collect before summarizing
 
-class AssertionFailedException(Exception):
-    pass
-
 def summarize_reasons(reasons: List[str]) -> str:
     prompt = f"Summarize the following reasons:\n\n" + "\n".join(reasons)
     return generate_text(prompt)
@@ -85,7 +82,6 @@ def assert_operation(config):
         print("Assertion failed: The condition is not true for all entries.")
         print(f"\nReasons have been saved to: {config.args.reasons_output}")
         print(f"\nSummary of reasons:\n{summary}")
-        raise AssertionFailedException("Assertion failed for some entries")
     
     return all_yes, config.args.reasons_output, summary
 
