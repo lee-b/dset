@@ -8,7 +8,7 @@ import openai
 class DatasetItem(BaseModel):
     text: str
 
-def process_dataset(input_file, output_file, model="gpt-4o"):
+def process_dataset(input_file, output_file, model):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
@@ -36,7 +36,7 @@ def process_dataset(input_file, output_file, model="gpt-4o"):
             response = generate_text(text)
             f_out.write(json.dumps({'text': response}) + '\n')
 
-def generate_synthetic_dataset(input_file, output_file, model="gpt-4o"):
+def generate_synthetic_dataset(input_file, output_file, model):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
