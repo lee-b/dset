@@ -1,0 +1,88 @@
+POST /v1/chat/completions
+2
+{
+3
+  "model": "gpt-4o-2024-08-06",
+4
+  "messages": [
+5
+    {
+6
+      "role": "system",
+7
+      "content": "You are a helpful math tutor."
+8
+    },
+9
+    {
+10
+      "role": "user",
+11
+      "content": "solve 8x + 31 = 2"
+12
+    }
+13
+  ],
+14
+  "response_format": {
+15
+    "type": "json_schema",
+16
+    "json_schema": {
+17
+      "name": "math_response",
+18
+      "strict": true,
+19
+      "schema": {
+20
+        "type": "object",
+21
+        "properties": {
+22
+          "steps": {
+23
+            "type": "array",
+24
+            "items": {
+25
+              "type": "object",
+26
+              "properties": {
+27
+                "explanation": {
+28
+                  "type": "string"
+29
+                },
+30
+                "output": {
+31
+                  "type": "string"
+32
+                }
+33
+              },
+34
+              "required": ["explanation", "output"],
+35
+              "additionalProperties": false
+36
+            }
+37
+          },
+38
+          "final_answer": {
+39
+            "type": "string"
+40
+          }
+41
+        },
+        "required": ["steps", "final_answer"],
+        "additionalProperties": false
+      }
+    }
+  }
+47
+}
