@@ -1,5 +1,8 @@
+from dset.config import build_config
+
 def main():
-    print("Hello from dset!")
+    config = build_config()
+    config.operation(config)
 
 if __name__ == "__main__":
     main()
