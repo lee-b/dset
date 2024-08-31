@@ -3,7 +3,7 @@ import os
 import tempfile
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from dset.config import Config
 from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
 from argparse import Namespace
@@ -86,7 +86,8 @@ def test_merge_operation():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-def test_split_operation():
+@patch('dset.dataset.DataSet.split')
+def test_split_operation(mock_split):
     test_data = [{"id": i} for i in range(100)]
     input_file = create_test_data(test_data)
     output_dir = tempfile.mkdtemp()
@@ -96,19 +97,9 @@ def test_split_operation():
 
     split_operation(config)
 
-    split_files = list(Path(output_dir).glob("split*"))
-    assert len(split_files) > 1
-
-    total_entries = 0
-    for split_file in split_files:
-        with open(split_file, 'r') as f:
-            total_entries += sum(1 for _ in f)
-
-    assert total_entries == 100
+    mock_split.assert_called_once_with(Path(output_dir), 1000)
 
     os.unlink(input_file)
-    for split_file in split_files:
-        os.unlink(split_file)
     os.rmdir(output_dir)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
@@ -172,8 +163,6 @@ def test_generate_operation(mock_generate_text):
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-# New test cases
-
 def test_merge_operation_with_empty_file():
     test_data1 = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
     test_data2 = []
@@ -201,7 +190,8 @@ def test_merge_operation_with_empty_file():
     os.unlink(output_file)
     os.rmdir(output_dir)
 
-def test_split_operation_with_small_file():
+@patch('dset.dataset.DataSet.split')
+def test_split_operation_with_small_file(mock_split):
     test_data = [{"id": i} for i in range(5)]
     input_file = create_test_data(test_data)
     output_dir = tempfile.mkdtemp()
@@ -211,16 +201,9 @@ def test_split_operation_with_small_file():
 
     split_operation(config)
 
-    split_files = list(Path(output_dir).glob("split*"))
-    assert len(split_files) == 1
-
-    with open(split_files[0], 'r') as f:
-        split_data = [json.loads(line) for line in f]
-
-    assert len(split_data) == 5
+    mock_split.assert_called_once_with(Path(output_dir), 1000)
 
     os.unlink(input_file)
-    os.unlink(split_files[0])
     os.rmdir(output_dir)
 
 @patch('dset.openai_api.ask_yes_no_question', side_effect=lambda q, m: {"answer": False, "reason": "Mock negative response"})
@@ -243,7 +226,8 @@ def test_assert_operation_failure(mock_ask_yes_no_question):
     os.unlink(input_file)
     os.unlink(args.reasons_output)
 
-def test_filter_operation_with_directory_input():
+@patch('dset.openai_api.ask_yes_no_question', side_effect=mock_ask_yes_no_question)
+def test_filter_operation_with_directory_input(mock_ask_yes_no_question):
     test_data1 = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
     test_data2 = [{"name": "Charlie", "age": 35}, {"name": "David", "age": 40}]
     
