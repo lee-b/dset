@@ -26,11 +26,3 @@ def call_openai_api(prompt, model="gpt-3.5-turbo"):
         return response.json()["choices"][0]["message"]["content"]
     else:
         raise Exception(f"API call failed with status code {response.status_code}: {response.text}")
-
-# Example usage
-if __name__ == "__main__":
-    try:
-        result = call_openai_api("Hello, how are you?")
-        print(result)
-    except Exception as e:
-        print(f"Error: {e}")
