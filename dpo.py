@@ -68,6 +68,17 @@ def ask_dataset_question(input_file, question, model):
     
     return generate_text(model, prompt, max_tokens=1)
 
+def check_dataset_assertion(input_file, assertion, model):
+    with open(input_file, 'r') as f:
+        for i, line in enumerate(f, 1):
+            text = json.loads(line)['text']
+            prompt = f"Given the following text:\n\n{text}\n\nAssertion: {assertion}\n\nIs this assertion true for the given text? Answer (Yes/No):"
+            response = generate_text(model, prompt, max_tokens=1).lower()
+            if response != "yes":
+                print(f"Assertion failed for item {i}: {text}")
+                return False
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description="Dataset Processing Operations")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -104,6 +115,12 @@ def main():
     filter_parser.add_argument("--exclude-file", help="File containing prompt for excluding items")
     filter_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
 
+    # Check command
+    check_parser = subparsers.add_parser("check", help="Check an assertion for every item in the dataset")
+    check_parser.add_argument("input", help="Input file")
+    check_parser.add_argument("assertion", help="Assertion to check for each item in the dataset")
+    check_parser.add_argument("--model", default="gpt-4", help="Model to use for text generation")
+
     args = parser.parse_args()
 
     openai.api_key = os.environ.get('OPENAI_API_KEY')
@@ -122,6 +139,11 @@ def main():
         include_prompt = load_prompt(args.include_file) if args.include_file else args.include
         exclude_prompt = load_prompt(args.exclude_file) if args.exclude_file else args.exclude
         filter_dataset(args.input, args.output, args.model, include_prompt, exclude_prompt)
+    elif args.command == "check":
+        result = check_dataset_assertion(args.input, args.assertion, args.model)
+        if not result:
+            sys.exit(1)
+        print("All items in the dataset satisfy the assertion.")
     else:
         parser.print_help()
 
