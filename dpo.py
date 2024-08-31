@@ -14,8 +14,12 @@ def load_prompt(file_or_string):
             return f.read().strip()
     return file_or_string
 
-def generate_text(model, prompt, max_tokens=256):
+def generate_text(model, prompt, max_tokens=256, yes_no=False):
     try:
+        if yes_no:
+            prompt += "\n\nAnswer with only 'yes' or 'no'."
+            max_tokens = 1  # Limit to 1 token for yes/no answers
+        
         response = openai.ChatCompletion.create(
             model=model,
             messages=[
@@ -26,7 +30,7 @@ def generate_text(model, prompt, max_tokens=256):
             n=1,
             temperature=0.7,
         )
-        return response.choices[0].message['content'].strip()
+        return response.choices[0].message['content'].strip().lower()
     except Exception as e:
         print(f"Error in text generation: {e}", file=sys.stderr)
         return ""
@@ -51,10 +55,10 @@ def filter_dataset(input_file, output_file, model, include_prompt, exclude_promp
             data = json.loads(line)
             text = data['text']
             if include_prompt:
-                if generate_text(model, f"{include_prompt}\n\nText: {text}\n\nAnswer (Yes/No):").lower() == "yes":
+                if generate_text(model, f"{include_prompt}\n\nText: {text}", yes_no=True) == "yes":
                     f_out.write(line)
             elif exclude_prompt:
-                if generate_text(model, f"{exclude_prompt}\n\nText: {text}\n\nAnswer (Yes/No):").lower() == "no":
+                if generate_text(model, f"{exclude_prompt}\n\nText: {text}", yes_no=True) == "no":
                     f_out.write(line)
 
 def ask_dataset_question(input_file, question, model):
@@ -64,16 +68,16 @@ def ask_dataset_question(input_file, question, model):
             dataset.append(json.loads(line)['text'])
 
     dataset_str = "\n".join(dataset)
-    prompt = f"Given the following dataset:\n\n{dataset_str}\n\nQuestion: {question}\n\nAnswer (Yes/No):"
+    prompt = f"Given the following dataset:\n\n{dataset_str}\n\nQuestion: {question}"
     
-    return generate_text(model, prompt, max_tokens=1)
+    return generate_text(model, prompt, yes_no=True)
 
 def check_dataset_assertion(input_file, assertion, model):
     with open(input_file, 'r') as f:
         for i, line in enumerate(f, 1):
             text = json.loads(line)['text']
-            prompt = f"Given the following text:\n\n{text}\n\nAssertion: {assertion}\n\nIs this assertion true for the given text? Answer (Yes/No):"
-            response = generate_text(model, prompt, max_tokens=1).lower()
+            prompt = f"Given the following text:\n\n{text}\n\nAssertion: {assertion}\n\nIs this assertion true for the given text?"
+            response = generate_text(model, prompt, yes_no=True)
             if response != "yes":
                 print(f"Assertion failed for item {i}: {text}")
                 return False
