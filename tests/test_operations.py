@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import pytest
 from unittest.mock import patch
 from dset.config import Config
 from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
