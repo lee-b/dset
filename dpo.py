@@ -8,7 +8,7 @@ import openai
 class DatasetItem(BaseModel):
     text: str
 
-def process_dataset(input_file, output_file, model="gpt-4"):
+def process_dataset(input_file, output_file, model="gpt-4o"):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
@@ -36,7 +36,7 @@ def process_dataset(input_file, output_file, model="gpt-4"):
             response = generate_text(text)
             f_out.write(json.dumps({'text': response}) + '\n')
 
-def generate_synthetic_dataset(input_file, output_file, model="gpt-4"):
+def generate_synthetic_dataset(input_file, output_file, model="gpt-4o"):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
@@ -67,7 +67,7 @@ def main():
     parser.add_argument('-i', '--input', help='input file')
     parser.add_argument('-o', '--output', help='output file')
     parser.add_argument('--generate', action='store_true', help='generate synthetic dataset')
-    parser.add_argument('--model', default='gpt-4', help='model to use for text generation')
+    parser.add_argument('--model', default='gpt-4o', help='model to use for text generation')
     args = parser.parse_args()
 
     if args.input and args.output:
