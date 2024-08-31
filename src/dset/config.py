@@ -1,5 +1,5 @@
 import argparse
-import sys
+import os
 from dataclasses import dataclass
 from typing import Callable
 
@@ -12,10 +12,12 @@ class Config:
     max_size: int = None
 
 def filter_handler(args):
-    print(f"Filtering data from {args.input} to {args.output}")
+    from dset.operations import filter_operation
+    filter_operation(args.input, args.output)
 
 def merge_handler(args):
-    print(f"Merging data from {args.input} to {args.output}")
+    from dset.operations import merge_operation
+    merge_operation(args.input, args.output)
 
 def split_handler(args):
     from dset.operations import split_operation
@@ -37,32 +39,32 @@ def build_config() -> Config:
 
     # Filter subcommand
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
-    filter_parser.add_argument('--input', required=True, help='Input dataset file')
-    filter_parser.add_argument('--output', required=True, help='Output dataset file')
+    filter_parser.add_argument('--input', required=True, help='Input dataset file or directory')
+    filter_parser.add_argument('--output', required=True, help='Output dataset file or directory')
     filter_parser.set_defaults(func=filter_handler)
 
     # Merge subcommand
     merge_parser = subparsers.add_parser('merge', help='Merge datasets into a new dataset')
-    merge_parser.add_argument('--input', required=True, help='Input dataset files (comma-separated)')
-    merge_parser.add_argument('--output', required=True, help='Output dataset file')
+    merge_parser.add_argument('--input', required=True, help='Input dataset files or directories (comma-separated)')
+    merge_parser.add_argument('--output', required=True, help='Output dataset file or directory')
     merge_parser.set_defaults(func=merge_handler)
 
     # Split subcommand
     split_parser = subparsers.add_parser('split', help='Split a dataset into multiple new datasets based on maximum size')
-    split_parser.add_argument('--input', required=True, help='Input dataset file')
-    split_parser.add_argument('--output', required=True, help='Output dataset files prefix')
+    split_parser.add_argument('--input', required=True, help='Input dataset file or directory')
+    split_parser.add_argument('--output', required=True, help='Output dataset files or directory prefix')
     split_parser.add_argument('--max-size', type=int, required=True, help='Maximum size of each split file in bytes')
     split_parser.set_defaults(func=split_handler)
 
     # Ask subcommand
     ask_parser = subparsers.add_parser('ask', help='Ask a yes/no question about the dataset')
-    ask_parser.add_argument('--input', required=True, help='Input dataset file')
+    ask_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     ask_parser.add_argument('--question', required=True, help='Question to ask about the dataset')
     ask_parser.set_defaults(func=ask_handler)
 
     # Assert subcommand
     assert_parser = subparsers.add_parser('assert', help='Assert a condition about the dataset')
-    assert_parser.add_argument('--input', required=True, help='Input dataset file')
+    assert_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     assert_parser.add_argument('--question', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_handler)
 

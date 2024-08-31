@@ -1,18 +1,14 @@
-import json
-import os
 from dset.openai_api import ask_yes_no_question
+from dset.dataset import DataSet
 
-def process_jsonl(file_path, question):
-    results = []
-    with open(file_path, 'r') as file:
-        for line in file:
-            entry = json.loads(line)
-            result = ask_yes_no_question(f"{question}\nContext: {json.dumps(entry)}")
-            results.append(result)
-    return results
-
-def ask_operation(input_file, question):
-    results = process_jsonl(input_file, question)
+def ask_operation(input_path, question):
+    dataset = DataSet(input_path)
+    
+    def processor(entry):
+        return ask_yes_no_question(f"{question}\nContext: {json.dumps(entry)}")
+    
+    results = dataset.process(processor)
+    
     all_yes = all(result['answer'] for result in results)
     
     if all_yes:
@@ -24,8 +20,14 @@ def ask_operation(input_file, question):
     for result in results:
         print(f"- {result['reason']}")
 
-def assert_operation(input_file, question):
-    results = process_jsonl(input_file, question)
+def assert_operation(input_path, question):
+    dataset = DataSet(input_path)
+    
+    def processor(entry):
+        return ask_yes_no_question(f"{question}\nContext: {json.dumps(entry)}")
+    
+    results = dataset.process(processor)
+    
     all_yes = all(result['answer'] for result in results)
     
     if all_yes:
@@ -38,34 +40,15 @@ def assert_operation(input_file, question):
                 print(f"- {result['reason']}")
         exit(1)
 
-def split_operation(input_file, output_prefix, max_size):
-    file_number = 1
-    current_size = 0
-    current_file = None
-    file_sizes = []
+def split_operation(input_path, output_prefix, max_size):
+    dataset = DataSet(input_path)
+    dataset.split(output_prefix, max_size)
 
-    with open(input_file, 'r') as infile:
-        for line in infile:
-            line_size = len(line.encode('utf-8'))
+# Placeholder functions for filter and merge operations
+def filter_operation(input_path, output_path):
+    print(f"Filtering data from {input_path} to {output_path}")
+    # Implement filtering logic here
 
-            if current_file is None or current_size + line_size > max_size:
-                if current_file:
-                    current_file.close()
-                    file_sizes.append(current_size)
-
-                output_file = f"{output_prefix}_{file_number}.jsonl"
-                current_file = open(output_file, 'w')
-                print(f"Created file: {output_file}")
-                current_size = 0
-                file_number += 1
-
-            current_file.write(line)
-            current_size += line_size
-
-    if current_file:
-        current_file.close()
-        file_sizes.append(current_size)
-
-    print(f"\nTotal files created: {file_number - 1}")
-    print(f"Minimum file size: {min(file_sizes)} bytes")
-    print(f"Maximum file size: {max(file_sizes)} bytes")
+def merge_operation(input_path, output_path):
+    print(f"Merging data from {input_path} to {output_path}")
+    # Implement merging logic here
