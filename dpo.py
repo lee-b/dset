@@ -14,15 +14,17 @@ def process_dataset(input_file, output_file):
 
     def generate_text(prompt, max_tokens=256):
         try:
-            response = openai.Completion.create(
-                engine="text-davinci-002",
-                prompt=prompt,
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=max_tokens,
                 n=1,
-                stop=None,
                 temperature=0.7,
             )
-            return response.choices[0].text.strip()
+            return response.choices[0].message['content'].strip()
         except Exception as e:
             print(f"Error in text generation: {e}", file=sys.stderr)
             return ""
@@ -40,15 +42,17 @@ def generate_synthetic_dataset(input_file, output_file):
 
     def generate_synthetic_item(prompt="Generate a synthetic dataset item", max_tokens=256):
         try:
-            response = openai.Completion.create(
-                engine="text-davinci-002",
-                prompt=prompt,
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ],
                 max_tokens=max_tokens,
                 n=1,
-                stop=None,
                 temperature=0.7,
             )
-            return response.choices[0].text.strip()
+            return response.choices[0].message['content'].strip()
         except Exception as e:
             print(f"Error in synthetic item generation: {e}", file=sys.stderr)
             return ""
