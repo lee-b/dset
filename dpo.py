@@ -8,7 +8,7 @@ import openai
 class DatasetItem(BaseModel):
     text: str
 
-def process_dataset(input_file, output_file, model):
+def process_dataset(input_file, output_file, model, prompt_file=None, include_prompt=None, exclude_prompt=None):
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai.api_base = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
@@ -29,11 +29,24 @@ def process_dataset(input_file, output_file, model):
             print(f"Error in text generation: {e}", file=sys.stderr)
             return ""
 
+    if prompt_file:
+        with open(prompt_file, 'r') as f_prompt:
+            prompt = f_prompt.read().strip()
+    else:
+        prompt = None
+
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
             data = json.loads(line)
             text = data['text']
-            response = generate_text(text)
+            if include_prompt:
+                response = generate_text(f"{include_prompt} {text}")
+            elif exclude_prompt:
+                response = generate_text(f"{exclude_prompt} {text}")
+            elif prompt:
+                response = generate_text(f"{prompt} {text}")
+            else:
+                response = generate_text(text)
             f_out.write(json.dumps({'text': response}) + '\n')
 
 def generate_synthetic_dataset(input_file, output_file, model):
@@ -96,8 +109,10 @@ def main():
     parser.add_argument('-i', '--input', help='input file')
     parser.add_argument('-o', '--output', help='output file')
     parser.add_argument('--generate', action='store_true', help='generate synthetic dataset')
-    parser.add_argument('--model', default='gpt-4o', help='model to use for text generation')
-    parser.add_argument('--prompt-file', help='file containing prompt for dataset generation')
+    parser.add_argument('--model', default='gpt-4', help='model to use for text generation')
+    parser.add_argument('--prompt-file', help='file containing prompt for dataset generation or transformation')
+    parser.add_argument('--include-prompt', help='prompt for including items in the dataset')
+    parser.add_argument('--exclude-prompt', help='prompt for excluding items from the dataset')
     parser.add_argument('--num-items', type=int, default=100, help='number of items to generate when using a prompt file')
     args = parser.parse_args()
 
@@ -108,8 +123,8 @@ def main():
         input_file = sys.stdin
         output_file = sys.stdout
 
-    if args.prompt_file:
-        generate_dataset_from_prompt_file(args.prompt_file, output_file, model=args.model, num_items=args.num_items)
+    if args.prompt_file or args.include_prompt or args.exclude_prompt:
+        process_dataset(input_file, output_file, model=args.model, prompt_file=args.prompt_file, include_prompt=args.include_prompt, exclude_prompt=args.exclude_prompt)
     elif args.generate:
         generate_synthetic_dataset(input_file, output_file, model=args.model)
     else:
