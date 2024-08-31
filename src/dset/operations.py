@@ -1,9 +1,55 @@
 import json
 import os
 import sys
+from typing import List, Tuple
 from dset.openai_api import ask_yes_no_question, generate_text
 from dset.dataset import DataSet
 from dset.models import JsonLEntry
+
+CHUNK_SIZE = 10  # Number of reasons to collect before summarizing
+
+def summarize_reasons(reasons: List[str]) -> str:
+    prompt = f"Summarize the following reasons:\n\n" + "\n".join(reasons)
+    return generate_text(prompt)
+
+def update_summary(previous_summary: str, chunk_summary: str) -> str:
+    prompt = f"Combine and summarize these two summaries:\n\nPrevious summary: {previous_summary}\n\nNew chunk summary: {chunk_summary}"
+    return generate_text(prompt)
+
+def process_entries(dataset: DataSet, processor, config) -> Tuple[bool, List[str], str]:
+    all_yes = True
+    reasons = []
+    current_chunk = []
+    current_summary = ""
+    
+    with open(config.args.reasons_output, 'w') as reasons_file:
+        for result in dataset.process(processor):
+            if not result['answer']:
+                all_yes = False
+            
+            reason_entry = {"answer": result['answer'], "reason": result['reason']}
+            json.dump(reason_entry, reasons_file)
+            reasons_file.write('\n')
+            
+            current_chunk.append(result['reason'])
+            
+            if len(current_chunk) >= CHUNK_SIZE:
+                chunk_summary = summarize_reasons(current_chunk)
+                if current_summary:
+                    current_summary = update_summary(current_summary, chunk_summary)
+                else:
+                    current_summary = chunk_summary
+                current_chunk.clear()
+    
+    # Process any remaining reasons in the last chunk
+    if current_chunk:
+        chunk_summary = summarize_reasons(current_chunk)
+        if current_summary:
+            current_summary = update_summary(current_summary, chunk_summary)
+        else:
+            current_summary = chunk_summary
+    
+    return all_yes, reasons, current_summary
 
 def ask_operation(config):
     dataset = DataSet(config.args.input)
@@ -11,22 +57,17 @@ def ask_operation(config):
     def processor(entry):
         return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
-    all_yes = True
-    reasons = []
-    
-    for result in dataset.process(processor):
-        if not result['answer']:
-            all_yes = False
-        reasons.append(result['reason'])
+    all_yes, reasons, summary = process_entries(dataset, processor, config)
     
     if all_yes:
         print("Yes, that is the case for all entries.")
     else:
         print("No, that is not the case for some entries.")
     
-    print("\nReasons:")
-    for reason in reasons:
-        print(f"- {reason}")
+    print(f"\nReasons have been saved to: {config.args.reasons_output}")
+    print(f"\nSummary of reasons:\n{summary}")
+    
+    return all_yes, config.args.reasons_output, summary
 
 def assert_operation(config):
     dataset = DataSet(config.args.input)
@@ -34,22 +75,17 @@ def assert_operation(config):
     def processor(entry):
         return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
-    all_yes = True
-    failure_reasons = []
-    
-    for result in dataset.process(processor):
-        if not result['answer']:
-            all_yes = False
-            failure_reasons.append(result['reason'])
+    all_yes, reasons, summary = process_entries(dataset, processor, config)
     
     if all_yes:
         print("Assertion passed: The condition is true for all entries.")
     else:
         print("Assertion failed: The condition is not true for all entries.")
-        print("\nReasons for failures:")
-        for reason in failure_reasons:
-            print(f"- {reason}")
+        print(f"\nReasons have been saved to: {config.args.reasons_output}")
+        print(f"\nSummary of reasons:\n{summary}")
         sys.exit(1)
+    
+    return all_yes, config.args.reasons_output, summary
 
 def split_operation(config):
     dataset = DataSet(config.args.input)
