@@ -1,35 +1,31 @@
 import argparse
-import os
 from dataclasses import dataclass
 from typing import Callable
 
 @dataclass
 class Config:
-    input: str
-    output: str
+    args: argparse.Namespace
     operation: Callable
-    raw_user_prompt: str = None
-    max_size: int = None
 
-def filter_handler(args):
+def filter_handler(config):
     from dset.operations import filter_operation
-    filter_operation(args.input, args.output, args.raw_user_prompt)
+    filter_operation(config.args.input, config.args.output, config.args.raw_user_prompt)
 
-def merge_handler(args):
+def merge_handler(config):
     from dset.operations import merge_operation
-    merge_operation(args.input, args.output)
+    merge_operation(config.args.input, config.args.output)
 
-def split_handler(args):
+def split_handler(config):
     from dset.operations import split_operation
-    split_operation(args.input, args.output, args.max_size)
+    split_operation(config.args.input, config.args.output, config.args.max_size)
 
-def ask_handler(args):
+def ask_handler(config):
     from dset.operations import ask_operation
-    ask_operation(args.input, args.raw_user_prompt)
+    ask_operation(config.args.input, config.args.raw_user_prompt)
 
-def assert_handler(args):
+def assert_handler(config):
     from dset.operations import assert_operation
-    assert_operation(args.input, args.raw_user_prompt)
+    assert_operation(config.args.input, config.args.raw_user_prompt)
 
 def build_config() -> Config:
     parser = argparse.ArgumentParser(description="DSET: Dataset Processing Operations")
@@ -72,9 +68,6 @@ def build_config() -> Config:
     args = parser.parse_args()
 
     return Config(
-        input=args.input,
-        output=getattr(args, 'output', None),
-        operation=args.func,
-        raw_user_prompt=getattr(args, 'raw_user_prompt', None),
-        max_size=getattr(args, 'max_size', None)
+        args=args,
+        operation=args.func
     )
