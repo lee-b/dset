@@ -49,7 +49,3 @@ def build_config() -> Config:
         output=args.output,
         operation=args.func
     )
-
-if __name__ == "__main__":
-    config = build_config()
-    config.operation(config)
