@@ -16,41 +16,41 @@ def build_config() -> Tuple[bool, Optional[Config]]:
 
     # Filter subcommand
     filter_parser = subparsers.add_parser('filter', help='Filter the dataset and create a new dataset')
-    filter_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    filter_parser.add_argument('--output', required=True, help='Output dataset file or directory')
-    filter_parser.add_argument('--raw-user-prompt', required=True, help='Raw user prompt for filtering entries')
+    filter_parser.add_argument('input', help='Input dataset file or directory')
+    filter_parser.add_argument('output', help='Output dataset file or directory')
+    filter_parser.add_argument('raw_user_prompt', help='Raw user prompt for filtering entries')
     filter_parser.set_defaults(func=filter_operation)
 
     # Merge subcommand
     merge_parser = subparsers.add_parser('merge', help='Merge datasets into a new dataset')
-    merge_parser.add_argument('--input', required=True, help='Input dataset files or directories (comma-separated)')
-    merge_parser.add_argument('--output', required=True, help='Output dataset file or directory')
+    merge_parser.add_argument('input', help='Input dataset files or directories (comma-separated)')
+    merge_parser.add_argument('output', help='Output dataset file or directory')
     merge_parser.set_defaults(func=merge_operation)
 
     # Split subcommand
     split_parser = subparsers.add_parser('split', help='Split a dataset into multiple new datasets based on maximum size')
-    split_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    split_parser.add_argument('--output', required=True, help='Output dataset files or directory prefix')
-    split_parser.add_argument('--max-size', type=int, required=True, help='Maximum size of each split file in bytes')
+    split_parser.add_argument('input', help='Input dataset file or directory')
+    split_parser.add_argument('output', help='Output dataset files or directory prefix')
+    split_parser.add_argument('max_size', type=int, help='Maximum size of each split file in bytes')
     split_parser.set_defaults(func=split_operation)
 
     # Ask subcommand
     ask_parser = subparsers.add_parser('ask', help='Ask a question about the dataset')
-    ask_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    ask_parser.add_argument('--raw-user-prompt', required=True, help='Question to ask about the dataset')
+    ask_parser.add_argument('input', help='Input dataset file or directory')
+    ask_parser.add_argument('raw_user_prompt', help='Question to ask about the dataset')
     ask_parser.set_defaults(func=ask_operation)
 
     # Assert subcommand
     assert_parser = subparsers.add_parser('assert', help='Assert a condition about the dataset')
-    assert_parser.add_argument('--input', required=True, help='Input dataset file or directory')
-    assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
+    assert_parser.add_argument('input', help='Input dataset file or directory')
+    assert_parser.add_argument('raw_user_prompt', help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
 
     # Generate subcommand
     gen_parser = subparsers.add_parser('gen', help='Generate a dataset of jsonl entries')
-    gen_parser.add_argument('--output', required=True, help='Output dataset file')
-    gen_parser.add_argument('--raw-user-prompt', required=True, help='Prompt for generating entries')
-    gen_parser.add_argument('--num-entries', type=int, required=True, help='Number of entries to generate')
+    gen_parser.add_argument('output', help='Output dataset file')
+    gen_parser.add_argument('raw_user_prompt', help='Prompt for generating entries')
+    gen_parser.add_argument('num_entries', type=int, help='Number of entries to generate')
     gen_parser.set_defaults(func=generate_operation)
 
     # Check if no arguments were provided
