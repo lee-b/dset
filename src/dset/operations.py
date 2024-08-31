@@ -9,9 +9,13 @@ def ask_operation(config):
     def processor(entry):
         return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
-    results = dataset.process(processor)
+    all_yes = True
+    reasons = []
     
-    all_yes = all(result['answer'] for result in results)
+    for result in dataset.process(processor):
+        if not result['answer']:
+            all_yes = False
+        reasons.append(result['reason'])
     
     if all_yes:
         print("Yes, that is the case for all entries.")
@@ -19,8 +23,8 @@ def ask_operation(config):
         print("No, that is not the case for some entries.")
     
     print("\nReasons:")
-    for result in results:
-        print(f"- {result['reason']}")
+    for reason in reasons:
+        print(f"- {reason}")
 
 def assert_operation(config):
     dataset = DataSet(config.args.input)
@@ -28,18 +32,21 @@ def assert_operation(config):
     def processor(entry):
         return ask_yes_no_question(f"{config.args.raw_user_prompt}\nContext: {json.dumps(entry)}")
     
-    results = dataset.process(processor)
+    all_yes = True
+    failure_reasons = []
     
-    all_yes = all(result['answer'] for result in results)
+    for result in dataset.process(processor):
+        if not result['answer']:
+            all_yes = False
+            failure_reasons.append(result['reason'])
     
     if all_yes:
         print("Assertion passed: The condition is true for all entries.")
     else:
         print("Assertion failed: The condition is not true for all entries.")
         print("\nReasons for failures:")
-        for result in results:
-            if not result['answer']:
-                print(f"- {result['reason']}")
+        for reason in failure_reasons:
+            print(f"- {reason}")
         exit(1)
 
 def split_operation(config):
@@ -57,45 +64,35 @@ def filter_operation(config):
         result = ask_yes_no_question(question)
         return result['answer'], entry
     
-    results = dataset.process(processor)
-    
-    filtered_entries = [entry for include, entry in results if include]
-    
-    # Create the output directory if it doesn't exist
     os.makedirs(os.path.dirname(config.args.output), exist_ok=True)
     
-    # Write the filtered entries to the output file
+    filtered_count = 0
     with open(config.args.output, 'w') as outfile:
-        for entry in filtered_entries:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+        for include, entry in dataset.process(processor):
+            if include:
+                json.dump(entry, outfile)
+                outfile.write('\n')
+                filtered_count += 1
     
-    print(f"Filtered {len(filtered_entries)} entries into {config.args.output}")
+    print(f"Filtered {filtered_count} entries into {config.args.output}")
 
 def merge_operation(config):
     print(f"Merging data from {config.args.input} to {config.args.output}")
     
-    # Create a set to store unique entries
-    merged_entries = set()
-
-    # Process each input path
-    for input_path in config.args.input.split(','):
-        dataset = DataSet(input_path.strip())
-        
-        def processor(entry):
-            # Convert the entry to a JSON string for hashing
-            entry_str = json.dumps(entry, sort_keys=True)
-            merged_entries.add(entry_str)
-            return None  # We don't need to return anything for merging
-        
-        dataset.process(processor)
-
-    # Create the output directory if it doesn't exist
     os.makedirs(os.path.dirname(config.args.output), exist_ok=True)
-
-    # Write the merged entries to the output file
+    
+    merged_count = 0
+    seen_entries = set()
+    
     with open(config.args.output, 'w') as outfile:
-        for entry_str in merged_entries:
-            outfile.write(entry_str + '\n')
-
-    print(f"Merged {len(merged_entries)} unique entries into {config.args.output}")
+        for input_path in config.args.input.split(','):
+            dataset = DataSet(input_path.strip())
+            
+            for entry in dataset.entries():
+                entry_str = json.dumps(entry, sort_keys=True)
+                if entry_str not in seen_entries:
+                    seen_entries.add(entry_str)
+                    outfile.write(entry_str + '\n')
+                    merged_count += 1
+    
+    print(f"Merged {merged_count} unique entries into {config.args.output}")
