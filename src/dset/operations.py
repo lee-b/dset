@@ -1,4 +1,5 @@
 import json
+import os
 from dset.openai_api import ask_yes_no_question
 from dset.dataset import DataSet
 
@@ -45,11 +46,35 @@ def split_operation(input_path, output_prefix, max_size):
     dataset = DataSet(input_path)
     dataset.split(output_prefix, max_size)
 
-# Placeholder functions for filter and merge operations
+# Placeholder function for filter operation
 def filter_operation(input_path, output_path):
     print(f"Filtering data from {input_path} to {output_path}")
     # Implement filtering logic here
 
-def merge_operation(input_path, output_path):
-    print(f"Merging data from {input_path} to {output_path}")
-    # Implement merging logic here
+def merge_operation(input_paths, output_path):
+    print(f"Merging data from {input_paths} to {output_path}")
+    
+    # Create a set to store unique entries
+    merged_entries = set()
+
+    # Process each input path
+    for input_path in input_paths.split(','):
+        dataset = DataSet(input_path.strip())
+        
+        def processor(entry):
+            # Convert the entry to a JSON string for hashing
+            entry_str = json.dumps(entry, sort_keys=True)
+            merged_entries.add(entry_str)
+            return None  # We don't need to return anything for merging
+        
+        dataset.process(processor)
+
+    # Create the output directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # Write the merged entries to the output file
+    with open(output_path, 'w') as outfile:
+        for entry_str in merged_entries:
+            outfile.write(entry_str + '\n')
+
+    print(f"Merged {len(merged_entries)} unique entries into {output_path}")
