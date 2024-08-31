@@ -5,11 +5,7 @@ def main():
     if not success:
         return
 
-    try:
-        config.args.func(config)
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        exit(1)
+    config.args.func(config)
 
 if __name__ == "__main__":
     main()
