@@ -97,15 +97,10 @@ def filter_operation(config):
     print(f"Filtering data from {config.args.input_path} to {config.args.output_path}")
     print(f"Requirement: {config.args.raw_user_prompt}")
     
-    dataset = DataSet(config.args.input_path)
-    
-    def processor(entry):
-        question = f"Does the following entry meet this requirement: '{config.args.raw_user_prompt}'?\nEntry: {json.dumps(entry)}"
-        result = ask_yes_no_question(question)
-        return result['answer'], entry
-    
+    input_path = Path(config.args.input_path)
     output_path = Path(config.args.output_path)
-    if output_path.is_file() and Path(config.args.input_path).is_dir():
+    
+    if output_path.is_file() and input_path.is_dir():
         raise ValueError("Cannot output to a file when input is a directory")
     
     output_path.mkdir(parents=True, exist_ok=True)
@@ -117,13 +112,31 @@ def filter_operation(config):
         output_file = output_path
     
     with open(output_file, 'w') as outfile:
-        for include, entry in dataset.process(processor):
-            if include:
-                json.dump(entry, outfile)
-                outfile.write('\n')
-                filtered_count += 1
+        if input_path.is_dir():
+            for file in input_path.glob('*.jsonl'):
+                dataset = DataSet(file)
+                for include, entry in process_dataset(dataset, config.args.raw_user_prompt):
+                    if include:
+                        json.dump(entry, outfile)
+                        outfile.write('\n')
+                        filtered_count += 1
+        else:
+            dataset = DataSet(input_path)
+            for include, entry in process_dataset(dataset, config.args.raw_user_prompt):
+                if include:
+                    json.dump(entry, outfile)
+                    outfile.write('\n')
+                    filtered_count += 1
     
     print(f"Filtered {filtered_count} entries into {output_file}")
+
+def process_dataset(dataset, prompt):
+    def processor(entry):
+        question = f"Does the following entry meet this requirement: '{prompt}'?\nEntry: {json.dumps(entry)}"
+        result = ask_yes_no_question(question)
+        return result['answer'], entry
+    
+    return dataset.process(processor)
 
 def merge_operation(config):
     print(f"Merging data from {config.args.input_path} to {config.args.output_path}")
