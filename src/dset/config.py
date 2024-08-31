@@ -2,7 +2,7 @@ import argparse
 import sys
 from dataclasses import dataclass
 from typing import Tuple, Optional
-from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation
+from dset.operations import filter_operation, merge_operation, split_operation, ask_operation, assert_operation, generate_operation
 
 @dataclass
 class Config:
@@ -45,6 +45,13 @@ def build_config() -> Tuple[bool, Optional[Config]]:
     assert_parser.add_argument('--input', required=True, help='Input dataset file or directory')
     assert_parser.add_argument('--raw-user-prompt', required=True, help='Condition to assert about the dataset')
     assert_parser.set_defaults(func=assert_operation)
+
+    # Generate subcommand
+    gen_parser = subparsers.add_parser('gen', help='Generate a dataset of jsonl entries')
+    gen_parser.add_argument('--output', required=True, help='Output dataset file')
+    gen_parser.add_argument('--raw-user-prompt', required=True, help='Prompt for generating entries')
+    gen_parser.add_argument('--num-entries', type=int, required=True, help='Number of entries to generate')
+    gen_parser.set_defaults(func=generate_operation)
 
     # Check if no arguments were provided
     if len(sys.argv) == 1:
