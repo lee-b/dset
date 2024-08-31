@@ -1,5 +1,4 @@
 import json
-import sys
 from pathlib import Path
 from typing import List, Tuple
 from dset.openai_api import ask_yes_no_question, generate_text
@@ -7,6 +6,9 @@ from dset.dataset import DataSet
 from dset.models import JsonLEntry
 
 CHUNK_SIZE = 10  # Number of reasons to collect before summarizing
+
+class AssertionFailedException(Exception):
+    pass
 
 def summarize_reasons(reasons: List[str]) -> str:
     prompt = f"Summarize the following reasons:\n\n" + "\n".join(reasons)
@@ -83,7 +85,7 @@ def assert_operation(config):
         print("Assertion failed: The condition is not true for all entries.")
         print(f"\nReasons have been saved to: {config.args.reasons_output}")
         print(f"\nSummary of reasons:\n{summary}")
-        sys.exit(1)
+        raise AssertionFailedException("Assertion failed for some entries")
     
     return all_yes, config.args.reasons_output, summary
 
