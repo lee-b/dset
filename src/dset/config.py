@@ -50,11 +50,9 @@ def build_config() -> Tuple[bool, Optional[Config]]:
         parser.print_help()
         return False, None
 
-    try:
-        args = parser.parse_args()
-    except SystemExit:
-        # This exception is raised when --help or --version is used
-        return False, None
+    # Note: We're not catching SystemExit here. This allows argparse to handle --help and --version
+    # flags naturally, exiting the program after displaying the appropriate information.
+    args = parser.parse_args()
 
     if not hasattr(args, 'func'):
         parser.print_help()
